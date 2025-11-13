@@ -1,0 +1,69 @@
+# =========================
+# GLOBAL - OS / IDE
+# =========================
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/*
+!.vscode/extensions.json
+
+# Editor junk
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# =========================
+# FRONTEND (Vite, React, TypeScript)
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# =========================
+# BACKEND (Spring Boot / Gradle)
+# =========================
+backend/.gradle/
+backend/build/
+backend/bin/
+backend/out/
+backend/help.md
+
+# Gradle Wrapper exceptions (keep JAR)
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# NetBeans (if not used, ignore all)
+backend/nbproject/private/
+backend/nbbuild/
+backend/dist/
+backend/nbdist/
+backend/.nb-gradle/
+
+# STS
+backend/.apt_generated
+backend/.classpath
+backend/.factorypath
+backend/.project
+backend/.settings/
+backend/.springBeans
+backend/.sts4-cache
+
+# Logs
+logs/
+*.log
+
+# =========================
+# ROOT NODE MODULES (if ever created)
+# =========================
+/node_modules
