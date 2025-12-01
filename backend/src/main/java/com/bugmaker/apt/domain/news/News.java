@@ -1,0 +1,80 @@
+package com.bugmaker.apt.domain.news;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.Comment;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "news")
+@EntityListeners(AuditingEntityListener.class)
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+@Comment("뉴스 마스터 테이블")
+public class News {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Comment("뉴스 ID")
+    private Long id;
+
+    @Column(nullable = false, length = 200)
+    @Comment("제목")
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    @Comment("본문")
+    private String content;
+
+    @Column(nullable = false, length = 500)
+    @Comment("출처")
+    private String reference;
+
+    @Column(nullable = false)
+    @Comment("조회수")
+    @Builder.Default
+    private Long viewCount = 0L;
+
+    @Column(nullable = false)
+    @Comment("좋아요 누적수")
+    @Builder.Default
+    private Long heartCount = 0L;
+
+    @Column(nullable = false)
+    @Comment("신고 누적수")
+    @Builder.Default
+    private Long reportCount = 0L;
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    @Comment("생성일")
+    private LocalDateTime createdDate;
+
+    @LastModifiedDate
+    @Comment("수정일")
+    private LocalDateTime lastModifiedDate;
+
+    // 비즈니스 메서드
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
+
+    public void increaseHeartCount() {
+        this.heartCount++;
+    }
+
+    public void decreaseHeartCount() {
+        if (this.heartCount > 0) {
+            this.heartCount--;
+        }
+    }
+
+    public void increaseReportCount() {
+        this.reportCount++;
+    }
+}

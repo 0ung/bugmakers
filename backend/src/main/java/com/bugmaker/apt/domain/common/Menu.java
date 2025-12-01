@@ -1,6 +1,5 @@
-package com.bugmaker.apt.domain.member;
+package com.bugmaker.apt.domain.common;
 
-import com.bugmaker.apt.constants.MemberRole;
 import com.bugmaker.apt.constants.Status;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,32 +11,37 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "member")
+@Table(name = "menu")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Comment("회원 마스터 테이블")
-public class Member {
+@Comment("메뉴 마스터 테이블")
+public class Menu {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Comment("회원 ID")
+    @Comment("메뉴 ID")
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    @Comment("이메일")
-    private String email;
+    @Column(nullable = false, length = 50)
+    @Comment("메뉴명")
+    private String name;
 
     @Column(nullable = false, length = 50)
-    @Comment("닉네임")
-    private String nickname;
+    @Comment("메뉴 타입")
+    private String type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Comment("역할")
-    @Builder.Default
-    private MemberRole memberRole = MemberRole.USER;
+    @Column(length = 500)
+    @Comment("설명")
+    private String description;
+
+    @Column(nullable = false)
+    @Comment("메뉴 순서") // 0: home, 1: news/forum/trends, 2-4: 지역 계층
+    private Integer seq;
+
+    @Comment("상위 메뉴")
+    private Long parentId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -53,22 +57,4 @@ public class Member {
     @LastModifiedDate
     @Comment("수정일")
     private LocalDateTime lastModifiedDate;
-
-    @Comment("삭제일")
-    private LocalDateTime deletedDate;
-
-    // 비즈니스 메서드
-    public void updateNickname(String nickname) {
-        this.nickname = nickname;
-    }
-
-    public void deactivate() {
-        this.status = Status.DEACTIVE;
-        this.deletedDate = LocalDateTime.now();
-    }
-
-    public void activate() {
-        this.status = Status.ACTIVE;
-        this.deletedDate = null;
-    }
 }

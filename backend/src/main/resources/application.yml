@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: local
+  jpa:
+    open-in-view: false
+
+
+
+
+
+    # local
+    #./gradlew bootRun
+
+    # dev
+    #./gradlew bootRun --args='--spring.profiles.active=dev'
+
+    # prod
+    #./gradlew bootRun --args='--spring.profiles.active=prod'
