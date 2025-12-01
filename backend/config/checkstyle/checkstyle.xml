@@ -8,11 +8,11 @@
     <!-- 파일 전체를 검사하기 전에 UTF-8 설정 -->
     <property name="charset" value="UTF-8"/>
 
-    <!-- 파일 이름 = 클래스 이름 규칙 -->
-    <module name="OuterTypeFilename"/>
 
     <module name="TreeWalker">
 
+        <!-- 파일 이름 = 클래스 이름 규칙 -->
+        <module name="OuterTypeFilename"/>
         <!-- 들여쓰기 기본 4칸 -->
         <module name="Indentation">
             <property name="basicOffset" value="4"/>
@@ -21,10 +21,6 @@
             <property name="lineWrappingIndentation" value="8"/>
         </module>
 
-        <!-- 한 줄 최대 길이 -->
-        <module name="LineLength">
-            <property name="max" value="120"/>
-        </module>
 
         <!-- 네이밍 규칙 -->
         <module name="MethodName"/>
@@ -36,5 +32,9 @@
 
         <!-- 금지: 사용하지 않는 import -->
         <module name="UnusedImports"/>
+    </module>
+    <!-- 한 줄 최대 길이 -->
+    <module name="LineLength">
+        <property name="max" value="120"/>
     </module>
 </module>

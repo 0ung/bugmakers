@@ -46,7 +46,7 @@ tasks.named('test') {
 tasks.withType(Checkstyle).configureEach {
     reports {
         xml.required = false
-		xml.required = true
+		html.required = true
     }
 }
 
