@@ -1,0 +1,53 @@
+name: Commit message check
+
+on:
+  push:
+    branches:
+      - "feat/**"
+
+jobs:
+  check-commit-message:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 전체 히스토리 필요
+
+      - name: Validate commit messages
+        run: |
+          echo "🔍 Checking commit messages..."
+
+          bad_commit=false
+
+          # Conventional commit 패턴
+           pattern="^\[(ADD|UPDATE|FIX|DELETE|REFACTOR|TEST)\] .+"
+
+
+          # push된 커밋만 검사
+          for commit in $(git rev-list ${{ github.event.before }}..${{ github.event.after }}); do
+            msg=$(git log --format=%s -n 1 $commit)
+            body=$(git log --format=%b -n 1 $commit)
+
+            echo "➡ Checking: $msg"
+
+            # 제목 검사
+            if ! echo "$msg" | grep -Eq "$pattern"; then
+              echo "❌ 제목 형식이 올바르지 않습니다: $msg"
+              bad_commit=true
+            fi
+
+            # Body 비었는지 검사
+            if [ -z "$body" ] || ! echo "$body" | grep -q "- "; then
+              echo "❌ Body(본문) 필수이며 - bullet 형식이어야 합니다."
+              bad_commit=true
+            fi
+          done
+
+          if [ "$bad_commit" = true ]; then
+            echo "❌ Commit message does NOT follow B-style convention."
+            exit 1
+          else
+            echo "✅ All commit messages are valid."
+          fi

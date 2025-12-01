@@ -1,0 +1,28 @@
+name: Checkstyle for feature branches
+
+on:
+  push:
+    branches:
+      - "feat/**"
+
+jobs:
+  checkstyle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Grant Permission
+        working-directory: backend
+        run: chmod +x gradlew
+
+      - name: Run Checkstyle (Lint Only)
+        working-directory: backend
+        run: ./gradlew checkstyleMain checkstyleTest
