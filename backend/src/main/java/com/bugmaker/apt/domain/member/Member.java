@@ -2,73 +2,71 @@ package com.bugmaker.apt.domain.member;
 
 import com.bugmaker.apt.constants.MemberRole;
 import com.bugmaker.apt.constants.Status;
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.Comment;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.bugmaker.apt.domain.shared.BaseEntity;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import static jakarta.persistence.EnumType.STRING;
+import static lombok.AccessLevel.PROTECTED;
+import static org.springframework.util.Assert.state;
+
 @Entity
-@Table(name = "member")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
-@Comment("회원 마스터 테이블")
-public class Member {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Comment("회원 ID")
-    private Long id;
+@NoArgsConstructor(access = PROTECTED)
+public class Member extends BaseEntity {
+//    @Column(nullable = false, unique = true, length = 100)
+    @Embedded
+    private Email email;
 
-    @Column(nullable = false, unique = true, length = 100)
-    @Comment("이메일")
-    private String email;
-
-    @Column(nullable = false, length = 50)
-    @Comment("닉네임")
+//    @Column(nullable = false, length = 50)
     private String nickname;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Comment("역할")
-    @Builder.Default
-    private MemberRole memberRole = MemberRole.USER;
+    @Enumerated(STRING)
+    private MemberRole memberRole;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Comment("상태")
-    @Builder.Default
-    private Status status = Status.ACTIVE;
+    @Enumerated(STRING)
+    private Status status;
 
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    @Comment("생성일")
-    private LocalDateTime createdDate;
+    private LocalDateTime deactivatedDate;
 
-    @LastModifiedDate
-    @Comment("수정일")
-    private LocalDateTime lastModifiedDate;
 
-    @Comment("삭제일")
-    private LocalDateTime deletedDate;
+    public static Member register(MemberRegisterRequest registerRequest, NicknameCreator nicknameCreator) {
+        Member member = new Member();
+
+        member.email = new Email(registerRequest.email());
+        member.nickname = nicknameCreator.generate();
+        member.memberRole = MemberRole.USER;
+        member.status = Status.ACTIVE;
+
+        return member;
+    }
 
     // 비즈니스 메서드
+    public void activate() {
+        state(status == Status.DEACTIVE, "비활성화 상태의 계정만 활성화 시킬 수 있습니다.");
+
+        this.status = Status.ACTIVE;
+        this.deactivatedDate = null;
+    }
+
+    public void deactivate() {
+        state(status == Status.ACTIVE, "활성 상태의 계정만 비활성화 시킬 수 있습니다.");
+
+        this.status = Status.DEACTIVE;
+        this.deactivatedDate = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return this.status == Status.ACTIVE;
+    }
+
     public void updateNickname(String nickname) {
         this.nickname = nickname;
     }
 
-    public void deactivate() {
-        this.status = Status.DEACTIVE;
-        this.deletedDate = LocalDateTime.now();
-    }
-
-    public void activate() {
-        this.status = Status.ACTIVE;
-        this.deletedDate = null;
-    }
 }
