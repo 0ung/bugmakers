@@ -1,67 +1,69 @@
 package com.bugmaker.apt.domain.forum;
 
+import com.bugmaker.apt.constants.Status;
 import com.bugmaker.apt.domain.member.Member;
+import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.Comment;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import static jakarta.persistence.EnumType.STRING;
+import static lombok.AccessLevel.PROTECTED;
+import static org.springframework.util.Assert.state;
+
 @Entity
-@Table(name = "forum")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
-@Comment("토론 마스터 테이블")
-public class Forum {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Comment("토론 ID")
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    @Comment("회원 ID")
-    private Member member;
-
+@NoArgsConstructor(access = PROTECTED)
+public class Forum extends BaseEntity {
     @Column(nullable = false, length = 200)
-    @Comment("토론명")
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    @Comment("토론 내용")
     private String content;
 
-    @Column(nullable = false)
-    @Comment("조회수")
-    @Builder.Default
-    private Long viewCount = 0L;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-    @Column(nullable = false)
-    @Comment("좋아요 누적수")
-    @Builder.Default
-    private Long heartCount = 0L;
+    private Long viewCount;
 
-    @Column(nullable = false)
-    @Comment("신고 누적수")
-    @Builder.Default
-    private Long reportCount = 0L;
+    private Long heartCount;
 
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    @Comment("생성일")
-    private LocalDateTime createdDate;
+    private Long reportCount;
 
-    @LastModifiedDate
-    @Comment("수정일")
-    private LocalDateTime lastModifiedDate;
+    @Enumerated(value = STRING)
+    private Status status;
 
-    // 비즈니스 메서드
+    private LocalDateTime deletedDate;
+
+    public static Forum postUp(ForumCreateRequest createRequest, Member member) {
+        Forum forum = new Forum();
+
+        forum.title = createRequest.title();
+        forum.content = createRequest.content();
+        forum.status = Status.ACTIVE;
+        forum.member = member;
+
+        forum.viewCount = 0L;
+        forum.heartCount = 0L;
+        forum.reportCount = 0L;
+
+        return forum;
+    }
+
+    public void delete() {
+        state(status == Status.ACTIVE, "이미 삭제된 게시글은 삭제할 수 없습니다.");
+
+        this.status = Status.DEACTIVE;
+        this.deletedDate = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return this.status == Status.ACTIVE;
+    }
+
     public void increaseViewCount() {
         this.viewCount++;
     }
@@ -71,12 +73,13 @@ public class Forum {
     }
 
     public void decreaseHeartCount() {
+        state(this.heartCount > 0 ,"좋아요 누적수는 마이너스가 될 수 없습니다.");
         if (this.heartCount > 0) {
             this.heartCount--;
         }
     }
-
     public void increaseReportCount() {
         this.reportCount++;
     }
+
 }
