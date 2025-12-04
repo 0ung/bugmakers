@@ -73,6 +73,8 @@ logs/
 # =========================
 .env
 .env.local
+.env.dev
 .env.*.local
 backend/.env
 backend/.env.local
+backend/.env.dev
