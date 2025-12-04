@@ -12,4 +12,7 @@ public interface MemberRepository extends Repository<Member, Long> {
     Optional<Member> findById(Long memberId);
 
     List<Member> findByNicknameContaining(String nickname);
+
+    // OAuth2 관련 메서드
+    Optional<Member> findByProviderAndProviderId(String provider, String providerId);
 }

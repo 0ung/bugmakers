@@ -34,6 +34,10 @@ public class Member extends BaseEntity {
 
     private LocalDateTime deactivatedDate;
 
+    // OAuth2 관련 필드
+    private String provider; // google, naver, kakao
+    private String providerId; // OAuth2 제공자의 고유 ID (카카오의 경우 id 필드)
+
 
     public static Member register(MemberRegisterRequest registerRequest, NicknameCreator nicknameCreator) {
         Member member = new Member();
@@ -43,6 +47,20 @@ public class Member extends BaseEntity {
         member.memberRole = MemberRole.USER;
         member.status = Status.ACTIVE;
 
+        return member;
+    }
+
+    // OAuth2 회원가입용 팩토리 메서드
+    public static Member joinWithOAuth2(String email, String provider, String providerId, NicknameCreator nicknameCreator) {
+        Member member = new Member();
+        
+        member.email = new Email(email);
+        member.nickname = nicknameCreator.generate();
+        member.memberRole = MemberRole.USER;
+        member.status = Status.ACTIVE;
+        member.provider = provider;
+        member.providerId = providerId;
+        
         return member;
     }
 
