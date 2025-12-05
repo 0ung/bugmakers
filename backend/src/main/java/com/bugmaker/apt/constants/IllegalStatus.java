@@ -5,11 +5,15 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum CommentSeq {
+public enum IllegalStatus {
 
-    COMMENT(1, "댓글"),
+    REGISTERED(1, "등록됨"),
 
-    RE_COMMENT(2, "대댓글");
+    PENDING(2, "대기중"),
+
+    APPROVED(3, "승인됨"),
+
+    REJECTED(4, "거부됨");
 
     private final int value;
     private final String displayName;

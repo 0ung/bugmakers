@@ -1,5 +1,6 @@
 package com.bugmaker.apt.service.member.oauth;
 
+import com.bugmaker.apt.common.exception.MemberDeactivatedException;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.member.NicknameCreator;
 import com.bugmaker.apt.dto.member.oauth.CustomOAuth2User;
@@ -54,13 +55,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Member member = memberRepository.findByProviderAndProviderId(provider, providerId)
                 .orElseGet(() -> joinNewMember(email, provider, providerId));
 
-        // 5. nameAttributeKey를 application.yml에서 가져오기
+        // 5. 회원 상태 체크 - DEACTIVE 상태면 로그인 차단
+        if (!member.isActive()) {
+            log.warn("정지된 회원의 로그인 시도 차단 - MemberId: {}, Email: {}, Status: {}",
+                    member.getId(), email, member.getStatus());
+            throw new MemberDeactivatedException(
+                    "계정이 정지되었습니다. 관리자에게 문의하세요."
+            );
+        }
+
+        // 6. nameAttributeKey를 application.yml에서 가져오기
         String nameAttributeKey = userRequest.getClientRegistration()
                 .getProviderDetails()
                 .getUserInfoEndpoint()
                 .getUserNameAttributeName();
 
-        // 6. CustomOAuth2User 반환
+        // 7. CustomOAuth2User 반환
+        log.info("OAuth2 로그인 성공 - MemberId: {}, Status: {}", member.getId(), member.getStatus());
         return new CustomOAuth2User(
                 oAuth2User.getAuthorities(),
                 attributes,

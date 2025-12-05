@@ -1,47 +1,114 @@
 package com.bugmaker.apt.domain.common;
 
+import com.bugmaker.apt.constants.IllegalReason;
+import com.bugmaker.apt.constants.IllegalStatus;
 import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.news.News;
+import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import static jakarta.persistence.EnumType.STRING;
+import static lombok.AccessLevel.PROTECTED;
 
 @Entity
-@Table(name = "illegal")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
-@Comment("신고 마스터 테이블")
-public class Illegal {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Comment("신고 ID")
-    private Long id;
+@NoArgsConstructor(access = PROTECTED)
+public class Illegal extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    @Comment("회원 ID (신고한 사람)")
-    private Member member;
+    @Column(nullable = false)
+    private Long memberId;  // 신고 당한 사람
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "news_id")
-    @Comment("뉴스 ID")
-    private News news;
+    @Enumerated(STRING)
+    @Column(nullable = false)
+    private IllegalReason reason;  // 신고 사유 '6. 기타' 시 '상세 설명' 선택 추가 가능
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "forum_id")
-    @Comment("토론 ID")
-    private Forum forum;
+    @Column(columnDefinition = "TEXT")
+    private String description;  // 상세 설명
 
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    @Comment("생성일")
-    private LocalDateTime createdDate;
+    private Long newsId;
+
+    private Long forumId;
+
+    @Enumerated(STRING)
+    @Column(nullable = false)
+    private IllegalStatus illegalStatus;  // 신고 상태
+
+
+    // 팩토리 메서드 - 뉴스 신고
+    public static Illegal reportNews(
+            Long memberId,
+            Long newsId,
+            IllegalReason reason,
+            String description) {
+        Illegal illegal = new Illegal();
+
+        illegal.memberId = memberId;
+        illegal.newsId = newsId;
+        illegal.reason = reason;
+        illegal.description = description;
+        illegal.illegalStatus = IllegalStatus.REGISTERED;
+
+        return illegal;
+    }
+
+    // 팩토리 메서드 - 토론 신고
+    public static Illegal reportForum(
+            Long memberId,
+            Long forumId,
+            IllegalReason reason,
+            String description) {
+        Illegal illegal = new Illegal();
+
+        illegal.memberId = memberId;
+        illegal.forumId = forumId;
+        illegal.reason = reason;
+        illegal.description = description;
+        illegal.illegalStatus = IllegalStatus.REGISTERED;
+
+        return illegal;
+    }
+
+    // 비즈니스 메서드 - 대기중으로 변경
+    public void markAsPending() {
+        this.illegalStatus = IllegalStatus.PENDING;
+    }
+
+    // 비즈니스 메서드 - 승인 (신고 처리 완료)
+    public void approve() {
+        this.illegalStatus = IllegalStatus.APPROVED;
+    }
+
+    // 비즈니스 메서드 - 거부 (신고 무효)
+    public void reject() {
+        this.illegalStatus = IllegalStatus.REJECTED;
+    }
+
+    // 타입 확인 메서드
+    public boolean isNewsReport() {
+        return newsId != null;
+    }
+
+    public boolean isForumReport() {
+        return forumId != null;
+    }
+
+    // 상태 확인 메서드
+    public boolean isRegistered() {
+        return this.illegalStatus == IllegalStatus.REGISTERED;
+    }
+
+    public boolean isPending() {
+        return this.illegalStatus == IllegalStatus.PENDING;
+    }
+
+    public boolean isApproved() {
+        return this.illegalStatus == IllegalStatus.APPROVED;
+    }
+
+    public boolean isRejected() {
+        return this.illegalStatus == IllegalStatus.REJECTED;
+    }
 }
