@@ -1,5 +1,6 @@
 package com.bugmaker.apt.service.member;
 
+import com.bugmaker.apt.constants.MemberRole;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,5 +42,18 @@ public class MemberService {
         Member member = findById(memberId);
         member.activate();
         log.info("회원 활성화 완료 - MemberId: {}, Nickname: {}", memberId, member.getNickname());
+    }
+
+    // 관리자 권한 확인
+    public boolean isAdmin(Long memberId) {
+        Member member = findById(memberId);
+        return member.getMemberRole() == MemberRole.ADMIN;
+    }
+
+    // 관리자 권한 검증 (예외 발생)
+    public void validateAdmin(Long memberId) {
+        if (!isAdmin(memberId)) {
+            throw new IllegalStateException("관리자 권한이 필요합니다.");
+        }
     }
 }
