@@ -16,8 +16,8 @@ jobs:
         run: |
           # 1. 이번 Push의 범위(Range) 구하기
           if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            git fetch origin main
-            range="origin/main..HEAD"  # 새 브랜치면 main 이후 변경분만
+            git fetch origin dev
+            range="origin/dev..HEAD"  # 새 브랜치면 dev 이후 변경분만
           else
             range="${{ github.event.before }}..${{ github.event.after }}" # 기존 브랜치면 업데이트된 구간만
           fi
