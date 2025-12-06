@@ -1,0 +1,40 @@
+name: PR Notifications
+
+on:
+pull_request:
+types: [opened, closed, review_requested]
+pull_request_review:
+types: [submitted]
+
+jobs:
+notify:
+runs-on: ubuntu-latest
+steps: - name: Notify on PR opened
+if: github.event.action == 'opened'
+uses: tsickert/discord-webhook@v5.3.0
+with:
+webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          embed-title: "🔔 New Pull Request"
+          embed-description: |
+            **Branch:** `${{ github.head_ref }}`
+**Title:** ${{ github.event.pull_request.title }}
+**Author:** ${{ github.event.pull_request.user.login }}
+**Link:** ${{ github.event.pull_request.html_url }}
+
+            @devops Please review!
+          embed-color: 3447003
+
+      - name: Notify on PR approved & merged
+        if: github.event.pull_request.merged == true
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          embed-title: "✅ PR Approved & Merged"
+          embed-description: |
+            **Branch:** `${{ github.head_ref }}`
+            **Title:** ${{ github.event.pull_request.title }}
+            **Merged by:** ${{ github.event.pull_request.merged_by.login }}
+            **Link:** ${{ github.event.pull_request.html_url }}
+
+            @${{ github.event.pull_request.user.login }} Your PR has been merged!
+          embed-color: 3066993
