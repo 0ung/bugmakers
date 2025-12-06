@@ -5,12 +5,13 @@ on:
     types: [closed]
     branches:
       - "dev"
-    paths: 
+    paths:
       - "backend/**"
+
 jobs:
-  
   build_and_deploy:
-    
+    # PR이 'Merge' 된 경우에만 실행 (닫기만 했을 땐 실행 X)
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +24,9 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
+      # 🛠️ [수정 1] backend 폴더 안에서 gradlew 실행
       - name: Build
+        working-directory: ./backend
         run: |
           chmod +x gradlew
           ./gradlew clean build -x test
@@ -33,31 +36,44 @@ jobs:
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
             -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+      # 🛠️ [수정 2] Docker 빌드 경로를 ./backend 로 지정
       - name: Build & Push Image
         env:
           IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/backend-dev
         run: |
-          docker build -t ${IMAGE_NAME}:latest .
+          # Dockerfile과 소스코드가 backend 폴더 안에 있으므로 경로 지정
+          docker build -t ${IMAGE_NAME}:latest ./backend
+
           docker push ${IMAGE_NAME}:latest
           echo "IMAGE_FULL=${IMAGE_NAME}:latest" >> $GITHUB_ENV
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
+        env:
+          IMAGE_FULL: ${{ env.IMAGE_FULL }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: IMAGE_FULL # 🛠️ [수정 3] SSH 스크립트로 변수 전달
           script: |
+            echo "Deploying image: $IMAGE_FULL"
+
+            # 최신 이미지 다운로드
             docker pull $IMAGE_FULL
+
+            # 기존 컨테이너 정리
             docker stop backend-dev || true
             docker rm backend-dev || true
 
+            # 네트워크 생성 (없으면 생성)
             docker network create dev-net || true
 
+            # 컨테이너 실행
             docker run -d \
               --name backend-dev \
               --network dev-net \
-              -e SPRING_PROFILES_ACTIVE=DEV \
+              -p 8080:8080 \
               -e SPRING_PROFILES_ACTIVE=DEV \
               -e DB_URL="${{ secrets.DEV_DB_URL }}" \
               -e DB_USER="${{ secrets.DEV_DB_USER }}" \
