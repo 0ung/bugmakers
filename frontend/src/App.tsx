@@ -4,7 +4,6 @@ function App() {
       <div>테스트 파일입니다~</div>
       <div>테스트 파일입니다~</div>
       <div>테스트 파일입니다~</div>
-      <div>테스트 파일입니다~</div>
     </>
   );
 }

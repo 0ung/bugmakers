@@ -29,11 +29,8 @@ jobs:
         # Dockerfile이 frontend 폴더 안에 있으므로 working-directory 설정은 안 해도 되지만
         # docker build 명령에서 경로를 잘 지정해야 합니다.
         run: |
-          # 1. 소문자 변환 및 공백 제거 (안전장치)
-          DOCKER_USER=$(echo "$RAW_USER" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | cut -d'@' -f1)
-
           # 2. 이미지 이름 설정
-          IMAGE_REPO="${DOCKER_USER}/frontend-dev"
+          IMAGE_REPO="gupo941020/frontend-dev"
 
           # 3. 타임스탬프 태그 생성 (롤백용)
           IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
