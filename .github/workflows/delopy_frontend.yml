@@ -10,7 +10,6 @@ on:
 
 jobs:
   build_and_deploy:
-    # PR이 'Merge' 된 경우에만 실행 (닫기만 했을 땐 실행 X)
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -18,32 +17,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      # 1. frontend 폴더로 이동해서 빌드
-      - name: Build
-        working-directory: ./frontend
-        run: |
-          npm install
-          npm run build
-
-      - name: Docker Login
+      # (선택 사항) Docker Build 안에서 npm install을 하므로
+      # 여기서 굳이 Node 세팅하고 빌드할 필요가 없어졌습니다. (시간 절약)
+      
+      - name: Login Docker Hub
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
             -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # 2. Docker 빌드 컨텍스트를 ./frontend 로 지정
-      - name: Build & Push
-        env:
-          IMAGE_NAME: frontend-dev
+      - name: Build & Push Image
+        # Dockerfile이 frontend 폴더 안에 있으므로 working-directory 설정은 안 해도 되지만
+        # docker build 명령에서 경로를 잘 지정해야 합니다.
         run: |
-          # Dockerfile이 frontend 폴더 안에 있으므로 경로 지정
-          docker build -t ${IMAGE_NAME}:latest ./frontend
-          docker push ${IMAGE_NAME}:latest
-          echo "IMAGE_FULL=${IMAGE_NAME}:latest" >> $GITHUB_ENV
+          # 1. 소문자 변환 및 공백 제거 (안전장치)
+          DOCKER_USER=$(echo "${{ secrets.DOCKER_USERNAME }}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+          
+          # 2. 이미지 이름 설정
+          IMAGE_REPO="${DOCKER_USER}/frontend-dev"
+          
+          # 3. 타임스탬프 태그 생성 (롤백용)
+          IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
+          IMAGE_FULL="${IMAGE_REPO}:${IMAGE_TAG}"
+
+          echo "Building image: ${IMAGE_FULL}"
+
+          # 4. Docker 빌드 (컨텍스트: ./frontend)
+          # Dockerfile 위치가 frontend/Dockerfile 이므로 -f 옵션 없이 context만 지정해도 됨
+          docker build -t ${IMAGE_FULL} ./frontend
+          docker push ${IMAGE_FULL}
+          
+          # latest 태그도 업데이트
+          docker tag ${IMAGE_FULL} ${IMAGE_REPO}:latest
+          docker push ${IMAGE_REPO}:latest
+          
+          # 5. 환경변수 저장
+          echo "IMAGE_FULL=${IMAGE_FULL}" >> $GITHUB_ENV
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
@@ -53,25 +61,26 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_FULL # 3. SSH 스크립트로 변수 전달
+          envs: IMAGE_FULL  # 필수: 변수 전달
           script: |
-            echo "Deploying image: $IMAGE_FULL"
-
-            # 최신 이미지 Pull
+            echo "Deploying version: $IMAGE_FULL"
+            
+            # 1. 이미지 Pull
             docker pull $IMAGE_FULL
-
-            # 기존 컨테이너 정리
+            
+            # 2. 기존 컨테이너 삭제
             docker stop frontend-dev || true
             docker rm frontend-dev || true
 
-            # 네트워크 생성 (없으면 생성)
+            # 3. 네트워크 생성
             docker network create dev-net || true
 
-            # 컨테이너 실행
-            # (주의: nginx.conf 파일이 EC2 서버의 해당 경로에 있어야 합니다)
+            # 4. 컨테이너 실행
+            # Nginx 기본 포트는 80이므로 -p 8082:80 사용 (외부 8082 -> 내부 80)
             docker run -d \
               --name frontend-dev \
               --network dev-net \
+              --restart always \
               -p 8082:80 \
               -v /home/ubuntu/nginx/dev/nginx.conf:/etc/nginx/nginx.conf:ro \
               -v /home/ubuntu/app/frontend/logs:/var/log/nginx \
