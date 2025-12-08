@@ -19,7 +19,7 @@ jobs:
 
       # (선택 사항) Docker Build 안에서 npm install을 하므로
       # 여기서 굳이 Node 세팅하고 빌드할 필요가 없어졌습니다. (시간 절약)
-
+      
       - name: Login Docker Hub
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
@@ -31,10 +31,10 @@ jobs:
         run: |
           # 1. 소문자 변환 및 공백 제거 (안전장치)
           DOCKER_USER=$(echo "${{ secrets.DOCKER_USERNAME }}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
-
+          
           # 2. 이미지 이름 설정
           IMAGE_REPO="${DOCKER_USER}/frontend-dev"
-
+          
           # 3. 타임스탬프 태그 생성 (롤백용)
           IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
           IMAGE_FULL="${IMAGE_REPO}:${IMAGE_TAG}"
@@ -45,11 +45,11 @@ jobs:
           # Dockerfile 위치가 frontend/Dockerfile 이므로 -f 옵션 없이 context만 지정해도 됨
           docker build -t ${IMAGE_FULL} ./frontend
           docker push ${IMAGE_FULL}
-
+          
           # latest 태그도 업데이트
           docker tag ${IMAGE_FULL} ${IMAGE_REPO}:latest
           docker push ${IMAGE_REPO}:latest
-
+          
           # 5. 환경변수 저장
           echo "IMAGE_FULL=${IMAGE_FULL}" >> $GITHUB_ENV
 
@@ -61,13 +61,13 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_FULL # 필수: 변수 전달
+          envs: IMAGE_FULL  # 필수: 변수 전달
           script: |
             echo "Deploying version: $IMAGE_FULL"
-
+            
             # 1. 이미지 Pull
             docker pull $IMAGE_FULL
-
+            
             # 2. 기존 컨테이너 삭제
             docker stop frontend-dev || true
             docker rm frontend-dev || true
