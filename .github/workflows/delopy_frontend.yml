@@ -30,7 +30,7 @@ jobs:
         # docker build 명령에서 경로를 잘 지정해야 합니다.
         run: |
           # 2. 이미지 이름 설정
-          IMAGE_REPO="gupo941020/frontend-dev"
+          IMAGE_REPO="ungyoung/frontend-dev"
 
           # 3. 타임스탬프 태그 생성 (롤백용)
           IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
