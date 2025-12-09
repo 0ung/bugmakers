@@ -67,3 +67,14 @@ logs/
 # ROOT NODE MODULES (if ever created)
 # =========================
 /node_modules
+
+# =========================
+# ENVIRONMENT VARIABLES (NEVER COMMIT!)
+# =========================
+.env
+.env.local
+.env.dev
+.env.*.local
+backend/.env
+backend/.env.local
+backend/.env.dev
