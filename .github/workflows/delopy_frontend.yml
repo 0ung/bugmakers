@@ -1,12 +1,14 @@
-name: Frontend DEV Deploy
+name: Frontend Deploy
 
 on:
   pull_request:
     types: [closed]
     branches:
       - "dev"
+      - "main"
     paths:
       - "frontend/**"
+  workflow_dispatch:
 
 jobs:
   build_and_deploy:
@@ -17,6 +19,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # === Branch 기반 profile, port, container, nginx, log 경로 자동 설정 ===
+      - name: Set environment by branch
+        id: env-branch
+        run: |
+          echo "CURRENT BRANCH = ${GITHUB_REF_NAME}"
+
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            echo "APP_PROFILE=dev" >> $GITHUB_ENV
+            echo "APP_PORT=100" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=frontend-dev" >> $GITHUB_ENV
+            echo "NGINX_CONF=/home/ubuntu/nginx/dev/nginx.conf" >> $GITHUB_ENV
+            echo "LOG_DIR=/home/ubuntu/app/frontend/dev/logs" >> $GITHUB_ENV
+          else
+            echo "APP_PROFILE=prod" >> $GITHUB_ENV
+            echo "APP_PORT=101" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=frontend-prod" >> $GITHUB_ENV
+            echo "NGINX_CONF=/home/ubuntu/nginx/prod/nginx.conf" >> $GITHUB_ENVd
+            echo "LOG_DIR=/home/ubuntu/app/frontend/prod/logs" >> $GITHUB_ENV
+          fi
+
+          echo "===== BRANCH CONFIG ====="
+          echo "PROFILE     = $APP_PROFILE"
+          echo "PORT        = $APP_PORT"
+          echo "CONTAINER   = $CONTAINER_NAME"
+          echo "NGINX_CONF  = $NGINX_CONF"
+          echo "LOG_DIR     = $LOG_DIR"
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -24,59 +53,56 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build & Push Image
-        # Dockerfile이 frontend 폴더 안에 있으므로 working-directory 설정은 안 해도 되지만
-        # docker build 명령에서 경로를 잘 지정해야 합니다.
         run: |
-          # 2. 이미지 이름 설정
-          IMAGE_REPO="ungyoung/frontend-dev"
-
-          # 3. 타임스탬프 태그 생성 (롤백용)
+          IMAGE_REPO="ungyoung/frontend"
           IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
           IMAGE_FULL="${IMAGE_REPO}:${IMAGE_TAG}"
 
-          echo "Building image: ${IMAGE_FULL}"
+          echo "IMAGE_FULL=${IMAGE_FULL}" >> $GITHUB_ENV
 
-          # 4. Docker 빌드 (컨텍스트: ./frontend)
-          # Dockerfile 위치가 frontend/Dockerfile 이므로 -f 옵션 없이 context만 지정해도 됨
           docker build -t ${IMAGE_FULL} ./frontend
           docker push ${IMAGE_FULL}
 
-          # latest 태그도 업데이트
           docker tag ${IMAGE_FULL} ${IMAGE_REPO}:latest
           docker push ${IMAGE_REPO}:latest
 
-          # 5. 환경변수 저장
-          echo "IMAGE_FULL=${IMAGE_FULL}" >> $GITHUB_ENV
-
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         env:
           IMAGE_FULL: ${{ env.IMAGE_FULL }}
+          APP_PROFILE: ${{ env.APP_PROFILE }}
+          APP_PORT: ${{ env.APP_PORT }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          NGINX_CONF: ${{ env.NGINX_CONF }}
+          LOG_DIR: ${{ env.LOG_DIR }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_FULL # 필수: 변수 전달
+          envs: IMAGE_FULL,APP_PROFILE,APP_PORT,CONTAINER_NAME,NGINX_CONF,LOG_DIR
           script: |
-            echo "Deploying version: $IMAGE_FULL"
+            echo "Deploying image: $IMAGE_FULL"
+            echo "Container: $CONTAINER_NAME"
+            echo "Port: $APP_PORT"
+            echo "Logs: $LOG_DIR"
 
-            # 1. 이미지 Pull
             docker pull $IMAGE_FULL
 
-            # 2. 기존 컨테이너 삭제
-            docker stop frontend-dev || true
-            docker rm frontend-dev || true
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
 
-            # 3. 네트워크 생성
             docker network create dev-net || true
 
-            # 4. 컨테이너 실행
-            # Nginx 기본 포트는 80이므로 -p 8082:80 사용 (외부 8082 -> 내부 80)
+            # 로그 디렉토리 생성
+            mkdir -p $LOG_DIR
+
             docker run -d \
-              --name frontend-dev \
+              --name $CONTAINER_NAME \
               --network dev-net \
               --restart always \
-              -p 8082:80 \
-              -v /home/ubuntu/nginx/dev/nginx.conf:/etc/nginx/nginx.conf:ro \
-              -v /home/ubuntu/app/frontend/logs:/var/log/nginx \
+              -p ${APP_PORT}:80 \
+              -v ${NGINX_CONF}:/etc/nginx/nginx.conf:ro \
+              -v $LOG_DIR:/var/log/nginx \
               $IMAGE_FULL
+
+            docker image prune -f
