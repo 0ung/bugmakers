@@ -66,6 +66,10 @@ tasks.withType(Checkstyle).configureEach {
     }
 }
 
+test {
+    jvmArgs "-javaagent:${configurations.testRuntimeClasspath.find { it.name.contains('mockito-core') }}", '-Xshare:off'
+}
+
 spotbugs {
     excludeFilter.set(file("${projectDir}/spotbugs-exclude-filter.xml"))
 }
