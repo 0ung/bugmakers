@@ -27,7 +27,7 @@ function App() {
       </div>
 
       <footer className="absolute bottom-4 text-white/50 text-sm">
-        Dev Server Environment
+        Dev Server Environment Dev Server Environment Dev Server Environment
       </footer>
     </div>
   );
