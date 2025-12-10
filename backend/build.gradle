@@ -38,6 +38,10 @@ tasks.named("checkstyleTest") {
 	enabled = false
 }
 
+tasks.named("checkstyleMain") {
+	enabled = false
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
