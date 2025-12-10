@@ -1,4 +1,7 @@
 spring:
+  docker:
+    compose:
+      enabled: false
   datasource:
     driver-class-name: org.postgresql.Driver
     url: ${DEV_DB_URL}
@@ -26,7 +29,7 @@ spring:
             scope:
               - email
               - profile
-            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            redirect-uri: ${DEV_HOST_DOMAIN}/login/oauth2/code/google
 
           naver:
             client-id: ${NAVER_CLIENT_ID}
@@ -36,7 +39,7 @@ spring:
               - email
             client-name: Naver
             authorization-grant-type: authorization_code
-            redirect-uri: http://localhost:8080/login/oauth2/code/naver
+            redirect-uri:  ${DEV_HOST_DOMAIN}/login/oauth2/code/naver
 
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
@@ -46,7 +49,7 @@ spring:
               - account_email
             client-name: Kakao
             authorization-grant-type: authorization_code
-            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            redirect-uri:  ${DEV_HOST_DOMAIN}/login/oauth2/code/kakao
             client-authentication-method: client_secret_post
 
         provider:
