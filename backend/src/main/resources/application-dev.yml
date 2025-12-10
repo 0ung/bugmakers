@@ -52,6 +52,7 @@ spring:
             redirect-uri:  ${DEV_HOST_DOMAIN}/login/oauth2/code/kakao
             client-authentication-method: client_secret_post
 
+
         provider:
           naver:
             authorization-uri: https://nid.naver.com/oauth2.0/authorize
