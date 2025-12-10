@@ -6,14 +6,14 @@ public class MemberFixture {
     }
 
     public static MemberRegisterRequest createMemberRegisterRequest() {
-        return createMemberRegisterRequest("bugmakers@naver.com");
+        return createMemberRegisterRequest("root@naver.com");
     }
 
     public static NicknameCreator nicknameCreator() {
         return new NicknameCreator() {
             @Override
             public String generate() {
-                return "라이언일병";
+                return "닉네임";
             }
         };
     }
