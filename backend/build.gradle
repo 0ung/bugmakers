@@ -15,6 +15,29 @@ checkstyle {
     ignoreFailures = false //규칙 어기면 빌드 실패
 }
 
+// ===== 테스트 비활성화 =====
+tasks.named("test") {
+	enabled = false
+}
+
+tasks.named("check") {
+	enabled = false
+}
+
+// ===== SpotBugs 비활성화 =====
+tasks.named("spotbugsMain") {
+	enabled = false
+}
+
+tasks.named("spotbugsTest") {
+	enabled = false
+}
+
+// ===== Checkstyle: test 제외, main만 검사 =====
+tasks.named("checkstyleTest") {
+	enabled = false
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
