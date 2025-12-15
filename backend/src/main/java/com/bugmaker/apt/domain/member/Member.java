@@ -8,6 +8,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,6 +24,7 @@ import static org.springframework.util.Assert.state;
 @Entity
 @Getter
 @NoArgsConstructor(access = PROTECTED)
+@ToString
 public class Member extends BaseEntity implements UserDetails {
 //    @Column(nullable = false, unique = true, length = 100)
     @Embedded

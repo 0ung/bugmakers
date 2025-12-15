@@ -13,5 +13,7 @@ public interface ForumRepository extends Repository<Forum, Long> {
 
     Optional<Forum> findById(Long id);
 
+    List<Forum> findAll();
+
     Page<Forum> findByTitleContaining(String title, Pageable pageable);
 }

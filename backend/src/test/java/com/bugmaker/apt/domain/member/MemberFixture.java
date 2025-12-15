@@ -1,5 +1,7 @@
 package com.bugmaker.apt.domain.member;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 public class MemberFixture {
     public static MemberRegisterRequest createMemberRegisterRequest(String email) {
         return new MemberRegisterRequest(email);
@@ -25,5 +27,11 @@ public class MemberFixture {
                 return nickname;
             }
         };
+    }
+
+    public static Member createEntityMember(Long id) {
+        Member member = Member.register(createMemberRegisterRequest(), nicknameCreator());
+        ReflectionTestUtils.setField(member, "id", id);
+        return member;
     }
 }

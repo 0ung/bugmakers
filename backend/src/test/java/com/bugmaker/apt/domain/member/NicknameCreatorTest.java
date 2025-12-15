@@ -1,20 +1,18 @@
 package com.bugmaker.apt.domain.member;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class NicknameCreatorTest {
-    @Autowired
-    NicknameCreator nicknameCreator;
 
     @Test
     void generateNickname() {
-        String generate = nicknameCreator.generate();
+        MemberRegisterRequest registerRequest = MemberFixture.createMemberRegisterRequest("bugmakers@naver.com");
 
-        assertThat(generate).isNotNull();
+        Member member = Member.register(registerRequest, () -> "금붕어");
+
+        assertThat(member.getNickname()).isNotNull();
+        assertThat(member.getNickname()).isEqualTo("금붕어");
     }
 }
