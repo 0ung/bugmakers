@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ForumRepository extends Repository<Forum, Long> {
+    Forum save(Forum forum);
+
     Optional<Forum> findById(Long id);
 
     Page<Forum> findByTitleContaining(String title, Pageable pageable);

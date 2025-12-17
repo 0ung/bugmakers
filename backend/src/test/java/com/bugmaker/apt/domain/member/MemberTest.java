@@ -17,22 +17,6 @@ class MemberTest {
         member = Member.register(createMemberRegisterRequest(), nicknameCreator());
     }
 
-//    @Test
-//    void register() {
-//        var registerRequest = new MemberRegisterRequest("bugmakers@naver.com");
-//
-//        Member member = Member.register(registerRequest, new NicknameCreator() {
-//            @Override
-//            public String generate() {
-//                return "매서운 호랑이";
-//            }
-//        });
-//
-//        assertThat(member.getNickname()).isEqualTo("매서운 호랑이");
-//        assertThat(member.getStatus()).isEqualTo(Status.ACTIVE);
-//        assertThat(member.getMemberRole()).isEqualTo(MemberRole.USER);
-//    }
-
     @Test
     void activate() {
         assertThat(member.getStatus()).isEqualTo(Status.ACTIVE);

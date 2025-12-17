@@ -5,6 +5,9 @@ import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MemberService {
+public class MemberService implements UserDetailsService {
 
     private final MemberRepository memberRepository;
 
@@ -55,5 +58,15 @@ public class MemberService {
         if (!isAdmin(memberId)) {
             throw new IllegalStateException("관리자 권한이 필요합니다.");
         }
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        try{
+            return memberRepository.findById(Long.parseLong(username)).orElseThrow();
+        }catch (NumberFormatException e){
+            log.error("user Id Parser Error");
+        }
+        return null;
     }
 }
