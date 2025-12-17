@@ -36,15 +36,30 @@ public class JwtUtil {
     }
 
     /**
-     * JWT 토큰 생성
+     * JWT 엑세스 토큰 생성
      */
-    public String generateToken(Long memberId, String email) {
+    public String generateAccessToken(Long memberId, String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .subject(String.valueOf(memberId))
                 .claim("email", email)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    /**
+     * JWT 리프레쉬 토큰 생성
+     */
+    public String generateRefreshToken(Long memberId, String email) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
+
+        return Jwts.builder()
+                .subject(String.valueOf(memberId))
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)

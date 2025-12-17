@@ -24,11 +24,11 @@ import static org.springframework.util.Assert.state;
 @Getter
 @NoArgsConstructor(access = PROTECTED)
 public class Member extends BaseEntity implements UserDetails {
-//    @Column(nullable = false, unique = true, length = 100)
+    //    @Column(nullable = false, unique = true, length = 100)
     @Embedded
     private Email email;
 
-//    @Column(nullable = false, length = 50)
+    //    @Column(nullable = false, length = 50)
     private String nickname;
 
     @Enumerated(STRING)
@@ -36,6 +36,9 @@ public class Member extends BaseEntity implements UserDetails {
 
     @Enumerated(STRING)
     private Status status;
+
+    //리프레쉬 토큰
+    private String refreshToken;
 
     private LocalDateTime deactivatedDate;
 
@@ -58,14 +61,14 @@ public class Member extends BaseEntity implements UserDetails {
     // OAuth2 회원가입용 팩토리 메서드
     public static Member joinWithOAuth2(String email, String provider, String providerId, NicknameCreator nicknameCreator) {
         Member member = new Member();
-        
+
         member.email = new Email(email);
         member.nickname = nicknameCreator.generate();
         member.memberRole = MemberRole.USER;
         member.status = Status.ACTIVE;
         member.provider = provider;
         member.providerId = providerId;
-        
+
         return member;
     }
 
@@ -92,9 +95,13 @@ public class Member extends BaseEntity implements UserDetails {
         this.nickname = nickname;
     }
 
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_"+this.memberRole.getName()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.memberRole.getName()));
     }
 
     @Override

@@ -69,3 +69,6 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration: 86400000  # 24시간 (밀리초)
+
+redirect:
+  HOST_DOMAIN: ${HOST_DOMAIN}
