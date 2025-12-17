@@ -52,6 +52,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Set API URL by branch
+        run: |
+          if [ "${{ env.APP_PROFILE }}" = "dev" ]; then
+            echo "VITE_API_URL=${{ secrets.VITE_API_BASE_URL_DEV }}" >> $GITHUB_ENV
+          else
+            echo "VITE_API_URL=${{ secrets.VITE_API_BASE_URL_PROD }}" >> $GITHUB_ENV
+          fi
+
       - name: Build & Push Image
         run: |
           IMAGE_REPO="ungyoung/frontend"
@@ -60,7 +68,9 @@ jobs:
 
           echo "IMAGE_FULL=${IMAGE_FULL}" >> $GITHUB_ENV
 
-          docker build -t ${IMAGE_FULL} ./frontend
+          docker build \
+            --build-arg VITE_API_BASE_URL=${{ env.VITE_API_URL }} \
+            -t ${IMAGE_FULL} ./frontend
           docker push ${IMAGE_FULL}
 
           docker tag ${IMAGE_FULL} ${IMAGE_REPO}:latest
@@ -75,6 +85,7 @@ jobs:
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           NGINX_CONF: ${{ env.NGINX_CONF }}
           LOG_DIR: ${{ env.LOG_DIR }}
+
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
