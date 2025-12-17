@@ -11,7 +11,6 @@ export default function AppRouter() {
         <Route path="/" element={<HomePage />} />
 
         <Route path="/login" element={<LoginPage />} />
-        {/* <Route path="/join" element={<JoinPage />} /> */}
 
         {/* 추후 */}
         {/* <Route path="/news" element={<NewsPage />} /> */}
