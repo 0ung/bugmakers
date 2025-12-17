@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import static jakarta.persistence.EnumType.STRING;
 import static lombok.AccessLevel.PROTECTED;
@@ -26,6 +28,9 @@ public class Forum extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
+
+    @OneToMany(mappedBy = "forum")
+    private List<ForumTagRelation> forumTagRelationList = new ArrayList<>();
 
     private Long viewCount;
 
@@ -64,6 +69,10 @@ public class Forum extends BaseEntity {
         return this.status == Status.ACTIVE;
     }
 
+    public void addForumTagRelation(ForumTagRelation forumTagRelation) {
+        this.forumTagRelationList.add(forumTagRelation);
+    }
+
     public void increaseViewCount() {
         this.viewCount++;
     }
@@ -78,6 +87,7 @@ public class Forum extends BaseEntity {
             this.heartCount--;
         }
     }
+
     public void increaseReportCount() {
         this.reportCount++;
     }

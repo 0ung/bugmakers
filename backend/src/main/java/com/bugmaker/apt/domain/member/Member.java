@@ -8,8 +8,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 import static jakarta.persistence.EnumType.STRING;
 import static lombok.AccessLevel.PROTECTED;
@@ -18,12 +23,12 @@ import static org.springframework.util.Assert.state;
 @Entity
 @Getter
 @NoArgsConstructor(access = PROTECTED)
-public class Member extends BaseEntity {
-//    @Column(nullable = false, unique = true, length = 100)
+public class Member extends BaseEntity implements UserDetails {
+    //    @Column(nullable = false, unique = true, length = 100)
     @Embedded
     private Email email;
 
-//    @Column(nullable = false, length = 50)
+    //    @Column(nullable = false, length = 50)
     private String nickname;
 
     @Enumerated(STRING)
@@ -31,6 +36,9 @@ public class Member extends BaseEntity {
 
     @Enumerated(STRING)
     private Status status;
+
+    //리프레쉬 토큰
+    private String refreshToken;
 
     private LocalDateTime deactivatedDate;
 
@@ -53,14 +61,14 @@ public class Member extends BaseEntity {
     // OAuth2 회원가입용 팩토리 메서드
     public static Member joinWithOAuth2(String email, String provider, String providerId, NicknameCreator nicknameCreator) {
         Member member = new Member();
-        
+
         member.email = new Email(email);
         member.nickname = nicknameCreator.generate();
         member.memberRole = MemberRole.USER;
         member.status = Status.ACTIVE;
         member.provider = provider;
         member.providerId = providerId;
-        
+
         return member;
     }
 
@@ -87,4 +95,22 @@ public class Member extends BaseEntity {
         this.nickname = nickname;
     }
 
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.memberRole.getName()));
+    }
+
+    @Override
+    public String getPassword() {
+        return "";
+    }
+
+    @Override
+    public String getUsername() {
+        return this.getId().toString();
+    }
 }

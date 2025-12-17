@@ -67,5 +67,8 @@ spring:
 
 # JWT 설정
 jwt:
-  secret: ${JWT_SECRET}
+  secret: testetasdasdasdasdasdasdasdasdasdas
   expiration: 86400000  # 24시간 (밀리초)
+
+redirect:
+  HOST_DOMAIN: http://localhost:5173/login
