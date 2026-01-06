@@ -51,6 +51,13 @@ public class JwtUtil {
                 .compact();
     }
 
+    public Authentication getAuthentication(String token) {
+        UserDetails userDetails = memberService.loadUserByUsername(getMemberIdFromToken(token));
+        log.debug("user deploy {}",userDetails);
+        return new UsernamePasswordAuthenticationToken
+                (userDetails,null,userDetails.getAuthorities());
+    }
+
     /**
      * JWT 리프레쉬 토큰 생성
      */

@@ -10,6 +10,7 @@ import java.util.List;
 
 import static com.bugmaker.apt.domain.member.MemberFixture.createMemberRegisterRequest;
 import static com.bugmaker.apt.domain.member.MemberFixture.nicknameCreator;
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -63,6 +64,13 @@ class ForumTest {
         }
 
         assertThat(forumTagRelationList.size()).isEqualTo(3);
+    }
+
+    @Test
+    void update() {
+        forum.update(new ForumUpdateRequest(1L, "수정된제목", "수정된내용"));
+
+        assertThat(forum.getTitle()).isEqualTo("수정된제목");
     }
 
     @Test
