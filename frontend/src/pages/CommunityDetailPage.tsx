@@ -2,7 +2,7 @@ import { useState } from "react";
 import MainLayout from "../components/layouts/MainLayout";
 
 export default function CommunityDetailPage() {
-  const [isLiked, setIsLiked] = useState(false);
+  //   const [isLiked, setIsLiked] = useState(false);
   const [votedOption, setVotedOption] = useState<string | null>(null);
 
   return (
