@@ -1,6 +1,7 @@
 package com.bugmaker.apt.repository;
 
 import com.bugmaker.apt.domain.member.Member;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.Repository;
 
 import java.util.List;

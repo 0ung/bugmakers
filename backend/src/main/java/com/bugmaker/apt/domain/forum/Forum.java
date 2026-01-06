@@ -6,6 +6,7 @@ import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import static org.springframework.util.Assert.state;
 @Entity
 @Getter
 @NoArgsConstructor(access = PROTECTED)
+@ToString
 public class Forum extends BaseEntity {
     @Column(nullable = false, length = 200)
     private String title;
@@ -56,6 +58,11 @@ public class Forum extends BaseEntity {
         forum.reportCount = 0L;
 
         return forum;
+    }
+
+    public void update(ForumUpdateRequest updateRequest) {
+        this.title = updateRequest.title();
+        this.content = updateRequest.content();
     }
 
     public void delete() {

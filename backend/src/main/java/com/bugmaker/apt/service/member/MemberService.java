@@ -61,9 +61,9 @@ public class MemberService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username)  {
         try{
-            return memberRepository.findById(Long.parseLong(username)).orElseThrow();
+            return memberRepository.findById(Long.parseLong(username)).orElseThrow(() -> new UsernameNotFoundException("해당 유저를 찾을 수 없습니다."));
         }catch (NumberFormatException e){
             log.error("user Id Parser Error");
         }
