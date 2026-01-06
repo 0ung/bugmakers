@@ -1,6 +1,7 @@
 package com.bugmaker.apt.contoller.member;
 
 
+import com.bugmaker.apt.common.util.JwtUtil;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.service.member.MemberService;
 import com.bugmaker.apt.domain.member.MemberRegisterRequest;
@@ -10,6 +11,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,23 +23,28 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/member")
 @Slf4j
 public class MemberController {
 
-    private final MemberService memberService;
     private final NicknameCreator nicknameCreator;
     private final MemberRepository memberRepository;
+    private final JwtUtil jwtUtil;
+
+    public MemberController(NicknameCreator nicknameCreator, MemberRepository memberRepository,JwtUtil jwtUtil) {
+        this.nicknameCreator = nicknameCreator;
+        this.memberRepository = memberRepository;
+        this.jwtUtil = jwtUtil;
+    }
 
     @GetMapping("/about/me")
     public ResponseEntity<Member> getUser(@AuthenticationPrincipal Member member){
         return ResponseEntity.ok(member);
     }
 
-    public MemberController(NicknameCreator nicknameCreator, MemberRepository memberRepository) {
-        this.nicknameCreator = nicknameCreator;
-        this.memberRepository = memberRepository;
+    @GetMapping("/accessToken")
+    public ResponseEntity<?> testing(){
+        return ResponseEntity.ok(jwtUtil.generateAccessToken(1L,"gupo941020@naver.com"));
     }
 
     @PostMapping("/register")
