@@ -72,3 +72,8 @@ jwt:
 
 redirect:
   HOST_DOMAIN: ${HOST_DOMAIN}
+
+# News Crawler API Key
+news:
+  crawler:
+    api-key: ${NEWS_CRAWLER_API_KEY}
