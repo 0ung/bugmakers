@@ -71,7 +71,7 @@ logs/
 # =========================
 # ENVIRONMENT VARIABLES (NEVER COMMIT!)
 # =========================
-.env
+# .env
 .env.local
 .env.dev
 .env.*.local
