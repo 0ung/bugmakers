@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -17,11 +18,12 @@ import java.util.Arrays;
 
 @Slf4j
 @RequiredArgsConstructor
+@Component
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
-    private final String tokenHeader = "access_token";
+    private final String tokenHeader = "accessToken";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -38,6 +40,11 @@ public class JwtFilter extends OncePerRequestFilter {
     private String parseJwt(HttpServletRequest request) {
         if (request.getCookies() == null) {
             return null;
+        }
+
+        for (int i = 0; i < request.getCookies().length; i++) {
+            Cookie cookie = request.getCookies()[i];
+            System.out.println(cookie.getName()+" " + cookie.getValue());
         }
 
         return Arrays.stream(request.getCookies())
