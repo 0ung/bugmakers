@@ -2,13 +2,12 @@ package com.bugmaker.apt.domain.common;
 
 import com.bugmaker.apt.constants.IllegalReason;
 import com.bugmaker.apt.constants.IllegalStatus;
-import com.bugmaker.apt.domain.forum.Forum;
-import com.bugmaker.apt.domain.member.Member;
-import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.domain.shared.BaseEntity;
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.Comment;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import static jakarta.persistence.EnumType.STRING;
 import static lombok.AccessLevel.PROTECTED;

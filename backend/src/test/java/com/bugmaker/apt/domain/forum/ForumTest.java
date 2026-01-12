@@ -10,7 +10,6 @@ import java.util.List;
 
 import static com.bugmaker.apt.domain.member.MemberFixture.createMemberRegisterRequest;
 import static com.bugmaker.apt.domain.member.MemberFixture.nicknameCreator;
-import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
