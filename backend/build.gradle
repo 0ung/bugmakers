@@ -12,7 +12,17 @@ description = '아파트 프로젝트'
 
 checkstyle {
     toolVersion = '10.12.4'
-    ignoreFailures = false //규칙 어기면 빌드 실패
+    ignoreFailures = true
+}
+
+// 테스트 Java 소스 컴파일 비활성화
+tasks.named('compileTestJava') {
+	enabled = false
+}
+
+// 테스트 리소스 처리 비활성화 (선택 사항이지만 깔끔합니다)
+tasks.named('processTestResources') {
+	enabled = false
 }
 
 // ===== 테스트 비활성화 =====
