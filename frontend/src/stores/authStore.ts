@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   loadUser: async () => {
     set({ isLoading: true });
     try {
-      const res = await api.get<User>("/auth/me");
+      const res = await api.get<User>("/member/about/me");
       set({
         isLoggedIn: true,
         user: res.data,
