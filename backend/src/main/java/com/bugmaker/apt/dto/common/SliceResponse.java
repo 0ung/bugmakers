@@ -8,7 +8,6 @@ import java.util.List;
 @Getter
 public class SliceResponse<T> {
     private final List<T> content;
-    private final SortResponse sort;
     private final boolean first;
     private final boolean last;
     private final boolean hasNext;
@@ -17,8 +16,6 @@ public class SliceResponse<T> {
 
     public SliceResponse(Slice<T> sliceContent){
         this.content = sliceContent.getContent();
-
-        this.sort = new SortResponse(sliceContent.getSort());
 
         this.first = sliceContent.isFirst();
         this.last = sliceContent.isLast();
