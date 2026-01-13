@@ -59,7 +59,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         addCookie(response, "refreshToken", refreshToken, 14 * 24 * 60 * 60, true);
 
         // 4. 메인으로 깔끔하게 리다이렉트
-        String targetUrl = domain + "/";
+        String targetUrl = domain + "/oauth2/redirect";
 
         log.info("Redirecting to Main (Cookies set): {}", targetUrl);
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
