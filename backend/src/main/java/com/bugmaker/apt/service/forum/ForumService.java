@@ -5,9 +5,13 @@ import com.bugmaker.apt.domain.forum.ForumCreateRequest;
 import com.bugmaker.apt.domain.forum.ForumDeleteRequest;
 import com.bugmaker.apt.domain.forum.ForumUpdateRequest;
 import com.bugmaker.apt.domain.member.Member;
+import com.bugmaker.apt.dto.common.SliceResponse;
+import com.bugmaker.apt.dto.forum.ForumListDto;
 import com.bugmaker.apt.repository.ForumRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -16,8 +20,28 @@ import org.springframework.validation.annotation.Validated;
 @Transactional
 @Validated
 @RequiredArgsConstructor
-public class ForumModifyService {
+public class ForumService {
     private final ForumRepository forumRepository;
+
+    public SliceResponse<ForumListDto> forumList(Pageable pageable) {
+        Slice<Forum> forums = forumRepository.findForumAll(pageable);
+
+        Slice<ForumListDto> dtos = forums.map(forum ->
+                new ForumListDto(
+                        forum.getId(),
+                        forum.getTitle(),
+                        forum.getContent(),
+                        forum.getMember().getNickname(),
+                        forum.getViewCount(),
+                        forum.getHeartCount(),
+                        forum.getReportCount(),
+                        forum.getCreatedDate(),
+                        forum.getLastModifiedDate()
+                )
+        );
+
+        return new SliceResponse<>(dtos);
+    }
 
     public Forum postUp(ForumCreateRequest createRequest, Member member) {
         checkCurse(createRequest.title(), createRequest.content());

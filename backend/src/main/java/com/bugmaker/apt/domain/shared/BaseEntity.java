@@ -2,7 +2,6 @@ package com.bugmaker.apt.domain.shared;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.ToString;
 import org.hibernate.proxy.HibernateProxy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;

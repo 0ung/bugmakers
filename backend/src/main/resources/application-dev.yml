@@ -16,6 +16,7 @@ spring:
         format_sql: true
         show_sql: false
         use_sql_comments: true
+        default_batch_fetch_size: 100
     show-sql: false
 
   # OAuth2 설정 (환경변수 사용)

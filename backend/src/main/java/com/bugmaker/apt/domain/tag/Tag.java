@@ -1,8 +1,9 @@
 package com.bugmaker.apt.domain.tag;
 
 import com.bugmaker.apt.domain.shared.BaseEntity;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import static lombok.AccessLevel.PROTECTED;
 
