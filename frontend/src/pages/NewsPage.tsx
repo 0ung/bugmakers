@@ -1,24 +1,69 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/layouts/MainLayout";
+import { api } from "../utils/axios";
+import type {NewsItem, NewsPageResponse, NewsUIItem} from "../types/news.ts";
 
 export default function NewsPage() {
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [newsList, setNewsList] = useState<NewsUIItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const newsList = [
-    {
-      id: 1,
-      category: "시장동향",
-      title: "“최근 오른 집값, 경기보다 ‘기대심리’가 더 큰 영향”",
-      description:
-        "서울을 중심으로 이어진 집값 상승이 경기 상황보다 앞으로도 오를 것이라는 기대심리가 더 크게 작용했다는 분석이 나왔다.",
-      date: "2025-11-11",
-      image:
-        "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
-    },
-    // ... 나머지 카드 데이터들
-  ];
+  // 뉴스 목록 더미
+  // const newsList = [
+  //   {
+  //     id: 1,
+  //     category: "시장동향",
+  //     title: "“최근 오른 집값, 경기보다 ‘기대심리’가 더 큰 영향”",
+  //     description:
+  //       "서울을 중심으로 이어진 집값 상승이 경기 상황보다 앞으로도 오를 것이라는 기대심리가 더 크게 작용했다는 분석이 나왔다.",
+  //     date: "2025-11-11",
+  //     image:
+  //       "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
+  //   },
+  //   // ... 나머지 카드 데이터들
+  // ];
+
+  // 뉴스 목록 불러오기
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get<NewsPageResponse>('/api/news', {
+          params: { page: 0, size: 12 }
+        });
+
+        // API 데이터를 UI 형식으로 변환
+        const formattedNews = response.data.content.map((news: NewsItem) => {
+          // 제목에서 카테고리 추출: [부동산] → "부동산"
+          const categoryMatch = news.title.match(/^\[([^\]]+)\]/);
+          const category = categoryMatch ? categoryMatch[1] : "일반";
+
+          // 제목에서 카테고리 제거
+          const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
+
+          return {
+            id: news.id,
+            category: category,
+            title: titleWithoutCategory,
+            description: "", // API에 description 없음
+            date: new Date(news.createdDate).toLocaleDateString('ko-KR'),
+            image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
+          };
+        });
+
+        setNewsList(formattedNews);
+      } catch (error) {
+        console.error('뉴스 불러오기 실패:', error);
+        setNewsList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
 
   const toggleFavorite = (e: React.MouseEvent, id: number) => {
     e.stopPropagation(); // 카드 클릭 이벤트 전파 방지
@@ -26,6 +71,28 @@ export default function NewsPage() {
       prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
     );
   };
+
+  // 로딩 중
+  if (loading) {
+    return (
+        <MainLayout>
+          <div className="max-w-7xl mx-auto text-center py-20">
+            <div className="text-gray-500">뉴스를 불러오는 중...</div>
+          </div>
+        </MainLayout>
+    );
+  }
+
+  // 뉴스가 없을 때
+  if (newsList.length === 0) {
+    return (
+        <MainLayout>
+          <div className="max-w-7xl mx-auto text-center py-20">
+            <div className="text-gray-500">등록된 뉴스가 없습니다.</div>
+          </div>
+        </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

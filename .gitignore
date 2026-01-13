@@ -63,6 +63,11 @@ backend/.sts4-cache
 logs/
 *.log
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
 # =========================
 # ROOT NODE MODULES (if ever created)
 # =========================

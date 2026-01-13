@@ -71,4 +71,9 @@ jwt:
   expiration: 86400000  # 24시간 (밀리초)
 
 redirect:
-  HOST_DOMAIN: http://localhost:5173/login
+  HOST_DOMAIN: http://localhost:5173
+
+  # News Crawler API Key
+  news:
+    crawler:
+      api-key: ${NEWS_CRAWLER_API_KEY}
