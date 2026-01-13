@@ -19,8 +19,8 @@ RSS 기반 부동산 뉴스 자동 수집 시스템
 ---
 
 ## 개요
-
-부동산 관련 뉴스를 RSS 피드에서 자동으로 수집하여 데이터베이스에 저장하는 시스템입니다. Python 크롤러가 주기적으로 실행되어 뉴스를 수집하고, Spring Boot Backend API를 통해 PostgreSQL에 저장됩니다.
+- 부동산 관련 뉴스를 RSS 피드에서 자동으로 수집하여 데이터베이스에 저장하는 시스템입니다. 
+- Python 크롤러가 주기적으로 실행되어 뉴스를 수집하고, Spring Boot Backend API를 통해 PostgreSQL에 저장됩니다.
 
 ---
 
@@ -39,8 +39,6 @@ RSS 기반 부동산 뉴스 자동 수집 시스템
 ---
 
 ## 주요 기능
-//TODO 스케쥴링 자동주기 임의 셋팅. 나머지 기능도 수정/보완 할 곳 많음. 일단 정리만 해둠
-
 ### 1. RSS 크롤링
 - 네이버, 다음, 매일경제, 한국경제 등 주요 언론사 RSS 피드 수집
 - 동시 다발적 크롤링 (여러 출처 병렬 처리)
@@ -55,12 +53,15 @@ RSS 기반 부동산 뉴스 자동 수집 시스템
 - Backend에서 이중 검증
 
 ### 4. 스케줄링
-- 하루 3회 자동 실행 (09:00, 15:00, 21:00)
+- 개발환경(local) : 수동 실행
 - 컨테이너 재시작 시 즉시 크롤링 실행
+
+- 운영환경(dev, prod) : os cron 
+- 하루 3회 자동 실행 (09:00, 15:00, 21:00)
 
 ### 5. 로깅
 - 실시간 로그 출력
-- 파일 로그 저장 (`crawler.log`, `scheduler.log`)
+- 파일 로그 저장 (`crawler.log`)
 - 수집/저장 통계 제공
 
 ---
@@ -79,8 +80,9 @@ RSS 기반 부동산 뉴스 자동 수집 시스템
 - **주요 라이브러리**:
     - `feedparser` - RSS 파싱
     - `requests` - HTTP 요청
-    - `schedule` - 스케줄링
     - `PyYAML` - 설정 관리
+    - `python-dotenv` - 환경 변수 로드
+    - `colorlog` - 색상 로그 출력
 
 ### 인프라
 - **컨테이너**: Docker & Docker Compose
@@ -144,11 +146,10 @@ bugmakers/
 └── scripts/
     └── news-crawler/
         ├── crawler.py                      # 메인 크롤러 로직
-        ├── scheduler.py                    # 스케줄러
+        ├── scheduler.py                    # 스케줄러 (로컬 개발용)
         ├── config.yaml                     # RSS 출처 & 키워드 설정
-        ├── requirements.txt                # Python 의존성
-        ├── Dockerfile                      # Docker 이미지
-        └── .dockerignore                   # Docker 빌드 제외 파일
+        ├── deploy/
+        │   ├── setup_cron.sh              # 운영 서버 Cron 설정 스크립트
 ```
 
 ### 데이터 플로우
@@ -167,7 +168,9 @@ bugmakers/
    - 말머리 추가 ([부동산], [정책] 등)
          ↓
 3. [HTTP Request]
-   POST http://host.docker.internal:8080/api/news
+   - 로컬: POST http://host.docker.internal:8080/api/news
+   - 운영: POST https://dev.koreavisited.shop/api/news
+   (환경에 따라 BASE_URL 자동 변환)
    Header: X-API-Key
    Body: { title, content, reference }
          ↓
@@ -331,14 +334,23 @@ Optional<News> findByReference(String reference);
 
 **클래스 구조**:
 ```python
-class NewsCrawler:
-    def __init__(self, config_path='config.yaml'):
-        # 환경변수 로드
-        self.backend_url = os.getenv('BACKEND_URL')
-        self.api_key = os.getenv('NEWS_CRAWLER_API_KEY')
-        
-        # 설정 파일 로드
-        self.config = yaml.safe_load(open(config_path))
+# 1. 로컬 .env 시도
+load_dotenv()
+
+# 2. backend/.env.dev 시도 (운영 환경)
+backend_env_dev = Path(__file__).parent.parent.parent / "backend" / ".env.dev"
+if backend_env_dev.exists() and not os.getenv('BASE_URL'):
+    load_dotenv(backend_env_dev)
+
+# 3. BASE_URL 사용 (통일!)
+base_url = os.getenv('BASE_URL', 'http://localhost:8080')
+
+# 4. Docker 환경 자동 감지
+if 'localhost' in base_url and os.path.exists('/.dockerenv'):
+    # Docker 컨테이너 내부 → host.docker.internal로 변환
+    self.backend_url = base_url.replace('localhost', 'host.docker.internal')
+else:
+    self.backend_url = base_url
 ```
 
 **주요 메서드**:
@@ -407,41 +419,7 @@ def run(self):
 
 ---
 
-### 5. Python - scheduler.py
-
-**위치**: `scripts/news-crawler/scheduler.py`
-
-**역할**: 주기적 크롤링 실행
-
-**스케줄 설정**:
-```python
-# 매일 오전 9시, 오후 3시, 오후 9시 실행
-schedule.every().day.at("09:00").do(job)
-schedule.every().day.at("15:00").do(job)
-schedule.every().day.at("21:00").do(job)
-
-# 시작 시 즉시 한 번 실행
-job()
-
-# 무한 루프
-while True:
-    schedule.run_pending()
-    time.sleep(60)  # 1분마다 체크
-```
-
-**작업 함수**:
-```python
-def job():
-    try:
-        crawler = NewsCrawler()
-        crawler.run()
-    except Exception as e:
-        logger.error(f"❌ 스케줄 작업 실패: {e}")
-```
-
----
-
-### 6. Python - config.yaml
+### 5. Python - config.yaml
 
 **위치**: `scripts/news-crawler/config.yaml`
 
@@ -479,7 +457,7 @@ crawler:
 
 ---
 
-### 7. Docker - Dockerfile
+### 6. Docker - Dockerfile
 
 **위치**: `scripts/news-crawler/Dockerfile`
 
@@ -516,7 +494,7 @@ CMD ["python", "scheduler.py"]
 
 ---
 
-### 8. Docker - compose.yaml
+### 7. Docker - compose.yaml
 
 **위치**: `backend/compose.yaml`
 
@@ -539,39 +517,40 @@ services:
       dockerfile: Dockerfile
     container_name: bugmaker-news-crawler
     environment:
-      - BACKEND_URL=http://host.docker.internal:8080
+      - BASE_URL=${BASE_URL}                              # .env.local의 BASE_URL 사용
       - NEWS_CRAWLER_API_KEY=${NEWS_CRAWLER_API_KEY}
+      - LOG_LEVEL=INFO
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
 ```
 
 **핵심 설정**:
-- `context: ../scripts/news-crawler`: 빌드 컨텍스트 경로
-- `BACKEND_URL=http://host.docker.internal:8080`: Host의 Backend 접근
-- `NEWS_CRAWLER_API_KEY=${NEWS_CRAWLER_API_KEY}`: .env.local에서 주입
+- `BASE_URL=${BASE_URL}`: .env.local의 BASE_URL 자동 주입
+- crawler.py가 localhost 감지 시 host.docker.internal로 자동 변환
+- NEWS_CRAWLER_API_KEY=${NEWS_CRAWLER_API_KEY}`: .env.local에서 주입
 - `restart: unless-stopped`: 컨테이너 자동 재시작
 - `extra_hosts`: host.docker.internal DNS 설정
 
 ---
 
-### 9. 환경 변수 관리
+### 8. 환경 변수 관리
 
 **Backend - .env.local**:
-**Backend - application-local.yml**:
-- `${변수명:기본값}` 형식
-- 환경변수 없으면 기본값 사용
+```env
+BASE_URL=http://localhost:8080                              # ← 통일!
+NEWS_CRAWLER_API_KEY=
+```
 
-**환경변수 주입 흐름**:
+**Backend - .env.dev**:
+```env
+BASE_URL=https://dev.koreavisited.shop                      # ← 통일!
+NEWS_CRAWLER_API_KEY=
 ```
-.env.local 파일
-    ↓ docker-compose --env-file .env.local
-Docker Compose
-    ↓ environment 설정
-Python 컨테이너
-    ↓ os.getenv()
-crawler.py
-```
+
+**Python Crawler**:
+- 로컬: Docker Compose가 `BASE_URL` 환경변수 주입
+- 운영: crawler.py가 직접 `backend/.env.dev`에서 `BASE_URL` 읽기
 
 ---
 
@@ -593,61 +572,61 @@ crawler.py
    ```
 
 ---
+### 🚀 개발환경 실행 순서(local)
 
-### 🚀 실행 순서
-
-#### 1단계: Docker 컨테이너 실행
-
+#### 1단계: Backend 실행 (IntelliJ)
+#### 2단계: Docker 컨테이너 실행 및 크롤러 로그 확인
 ```powershell
-# backend 디렉토리로 이동
-cd C:\Users\sypark1\IdeaProjects\bugmakers\backend
+// 1. Backend 디렉토리로 이동
+예) cd C:\Users\sypark1\IdeaProjects\bugmakers\backend
 
-# Docker Compose 실행 (.env.local 사용)
+// 2. Docker Compose 실행 (.env.local 환경 파일 로드)
 docker-compose --env-file .env.local up -d
 
-# 실행 확인
+// 3. 실행 중인 컨테이너 확인
 docker-compose ps
-```
 
-**예상 출력**:
-```
-NAME                       STATUS
-bugmaker-postgres          Up
-bugmaker-news-crawler      Up
-```
+# 예시 결과 :
+PS C:\Users\sypark1\IdeaProjects\bugmakers\backend> docker-compose ps                  
+time="2026-01-13T09:16:00+09:00" level=warning msg="The \"NEWS_CRAWLER_API_KEY\" variable is not set. Defaulting to a blank string."
+NAME                    IMAGE                  COMMAND                   SERVICE        CREATED        STATUS          PORTS
+bugmaker-news-crawler   backend-news-crawler   "python scheduler.py"     news-crawler   3 days ago     Up 47 minutes
+bugmaker-postgres       postgres:latest        "docker-entrypoint.s…"   postgres       23 hours ago   Up 47 minutes   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
 
-**주의사항**:
-- `--env-file .env.local` 옵션 필수!
-- 옵션 없으면 환경변수가 주입되지 않음
+// 4. 로그 확인
+# 전체 로그
+docker-compose logs
 
----
-
-#### 2단계: Backend 실행 (IntelliJ)
-
-```
-1. IntelliJ IDEA 실행
-2. AptApplication.java 우클릭
-3. Run 'AptApplication' 클릭
-```
-
-**실행 확인**:
-```
-콘솔에 다음 메시지 확인:
-Started AptApplication in X.XXX seconds (JVM running for X.XXX)
-```
-
-**포트 확인**:
-```
-Tomcat started on port 8080
-```
-
----
-
-#### 3단계: 크롤러 로그 확인
-
-```powershell
-# 크롤러 로그 실시간 확인
+# 실시간 로그 확인
 docker-compose logs -f news-crawler
+
+# 크롤러 전체 로그 확인
+docker-compose logs news-crawler
+
+# 최근 100줄
+docker-compose logs --tail=100 news-crawler
+
+# 특정 시간 이후 로그
+docker-compose logs --since 2026-01-13T09:00:00 news-crawler
+
+// 5. 기타
+# Docker 컨테이너 중지
+docker-compose down
+
+# 전체 재시작
+docker-compose down
+docker-compose --env-file .env.local up -d
+
+# 크롤러만 재시작 (코드 수정 후)
+docker-compose restart news-crawler
+
+# 크롤러 재빌드 (Dockerfile 수정 후)
+docker-compose build news-crawler
+docker-compose up -d news-crawler
+
+# 수동 크롤링 실행(스케줄 대기 없이 즉시 크롤링 실행)
+docker-compose exec news-crawler python crawler.py
+
 ```
 
 **성공 시 로그**:
@@ -667,413 +646,98 @@ RSS 피드 가져오기: 매일경제
 ============================================================
 ```
 
-**로그 종료**: `Ctrl + C`
-
 ---
 
-#### 4단계: 뉴스 데이터 확인
 
-##### A. API로 확인 (브라우저)
+### 🚀 운영환경 실행 순서(dev)
 
-```
-http://localhost:8080/api/news?page=0&size=10
-```
-
-**예상 응답**:
-```json
-{
-  "content": [
-    {
-      "id": 1,
-      "title": "[부동산] 서울 아파트 가격 5주 연속 상승",
-      "reference": "https://...",
-      "viewCount": 0,
-      "heartCount": 0,
-      "createdDate": "2026-01-09T10:30:00"
-    }
-  ],
-  "totalElements": 15,
-  "totalPages": 2
-}
-```
-
-##### B. DB에서 확인
-
+- 운영환경(dev) 배포하기
+- 운영 환경에서 os cron 설정하기
 ```powershell
-# PostgreSQL 접속
-docker-compose exec postgres psql -U postgres -d bugmaker_local
+# 1. 서버 접속
+ssh ubuntu@<dev domain url>
 
-# 뉴스 조회
-SELECT id, title, created_date FROM news ORDER BY created_date DESC LIMIT 10;
+# 2. 프로젝트 클론
+cd /home/ubuntu
+git clone <repository-url>
+cd bugmakers/scripts/news-crawler
 
-# 종료
-\q
+# 3. Python 및 의존성 설치
+python3 --version
+sudo apt update
+sudo apt install python3-pip -y
+pip3 install -r requirements.txt
+
+# 4. backend/.env.dev 확인 (선택)
+cat ../../backend/.env.dev
+
+# 5. Cron 설정
+chmod +x deploy/setup_cron.sh
+./deploy/setup_cron.sh
+
+# "지금 테스트 실행하시겠습니까? (y/n):" 
+# → y 입력 (테스트 실행)
+
+# 6. 확인
+# Cron 등록 확인
+crontab -l
+
+# 로그 확인
+tail -f /var/log/news-crawler.log
+
 ```
-
----
-
-### 🛑 중지 방법
-
+- 운영환경 실행하기
 ```powershell
-# Docker 컨테이너 중지
-docker-compose down
+// 1. cron 목록 조회 & 실행 확인 
+# 현재 사용자의 Cron 작업 목록 확인
+crontab -l
 
-# Backend 중지 (IntelliJ에서 Stop 버튼)
-```
+# 예시 결과 : 
+0 9,15,21 * * * cd /home/ubuntu/bugmakers/scripts/news-crawler && /usr/bin/python3 crawler.py >> /var/log/news-crawler.log 2>&1
 
----
+# Cron 데몬이 실행 중인지 확인
+sudo service cron status
 
-### 🔄 재시작 방법
+# 현재 시간 확인
+date
 
-#### 전체 재시작
-```powershell
-docker-compose down
-docker-compose --env-file .env.local up -d
-```
+# 온라인 도구
+https://crontab.guru
+0 9,15,21 * * * 입력하면 설명 확인 가능
 
-#### 크롤러만 재시작 (코드 수정 후)
-```powershell
-docker-compose restart news-crawler
-```
+// 2. 운영 환경에서 크롤링 로그 확인하기 
+# 실시간 로그 확인
+tail -f /var/log/news-crawler.log
 
-#### 크롤러 재빌드 (Dockerfile 수정 후)
-```powershell
-docker-compose build news-crawler
-docker-compose up -d news-crawler
-```
-
----
-
-### 🧪 수동 크롤링 실행
-
-```powershell
-# 스케줄 대기 없이 즉시 크롤링 실행
-docker-compose exec news-crawler python crawler.py
-```
-
----
-
-### 🔍 로그 확인 방법
-
-```powershell
-# 전체 로그
-docker-compose logs
-
-# 크롤러 로그만
-docker-compose logs news-crawler
-
-# 실시간 로그
-docker-compose logs -f news-crawler
+# 전체 로그 확인
+cat /var/log/news-crawler.log
 
 # 최근 100줄
-docker-compose logs --tail=100 news-crawler
+tail -100 /var/log/news-crawler.log
+
+# 오늘 로그
+grep "$(date +%Y-%m-%d)" /var/log/news-crawler.log
+
+# 특정 날짜 로그 (예: 2026-01-13)
+grep "2026-01-13" /var/log/news-crawler.log
+
+# 에러 로그만 보기
+grep "ERROR" /var/log/news-crawler.log
+
+# 에러 + 경고
+grep -E "ERROR|WARNING" /var/log/news-crawler.log
+
+# 성공한 뉴스만 보기
+grep "✅ 뉴스 등록 성공" /var/log/news-crawler.log
+
+# 중복 뉴스 확인
+grep "⚠️  중복 뉴스" /var/log/news-crawler.log
+
+# 크롤링 완료 통계 확인
+grep "크롤링 완료" /var/log/news-crawler.log | tail -10
+
+# 로그 크기 확인
+ls -lh /var/log/news-crawler.log
 ```
 
 ---
-
-## 신규 팀원 온보딩
-
-### 📥 프로젝트 Clone 후 설정
-
-#### 1단계: 저장소 Clone
-
-```bash
-git clone <repository-url>
-cd bugmakers
-```
-
----
-
-#### 2단계: 환경 변수 설정
-
-```bash
-cd backend
-
-# .env.local 파일 생성 (없는 경우)
-# 팀 리더에게 실제 KEY 값 전달받기
-```
-
-**⚠️  보안 주의**:
-- `.env.local` 파일은 절대 Git에 커밋하지 않기
-- `.gitignore`에 등록되어 있는지 확인
-
----
-
-#### 3단계: Docker Desktop 설치
-
-1. Docker Desktop 다운로드 및 설치
-    - https://www.docker.com/products/docker-desktop
-
-2. Docker Desktop 실행 확인
-   ```powershell
-   docker --version
-   docker-compose --version
-   ```
-
----
-
-#### 4단계: 프로젝트 실행
-
-```powershell
-# 1. Docker 컨테이너 시작
-cd backend
-docker-compose --env-file .env.local up -d
-
-# 2. IntelliJ에서 Backend 실행
-# Run → Run 'AptApplication'
-
-# 3. 로그 확인
-docker-compose logs -f news-crawler
-```
-
----
-
-#### 5단계: 동작 확인
-
-```
-1. 브라우저에서 뉴스 목록 확인:
-   http://localhost:8080/api/news
-
-2. 크롤러 로그에서 "뉴스 등록 성공" 메시지 확인
-```
-
----
-
-### 🎓 알아두면 좋은 것
-
-#### Python 코드 수정 시
-
-1. 코드 수정
-2. 컨테이너 재시작:
-   ```powershell
-   docker-compose restart news-crawler
-   ```
-
-#### config.yaml 수정 시 (RSS 출처 추가 등)
-
-1. `scripts/news-crawler/config.yaml` 수정
-2. 컨테이너 재시작:
-   ```powershell
-   docker-compose restart news-crawler
-   ```
-
-#### Dockerfile 수정 시
-
-1. Dockerfile 수정
-2. 재빌드 및 재시작:
-   ```powershell
-   docker-compose build news-crawler
-   docker-compose up -d news-crawler
-   ```
-
----
-
-## 문제 해결
-
-### 🐛 자주 발생하는 문제
-
-#### 1. "API Key 인증 실패"
-
-**증상**:
-```
-❌ 인증 실패: API Key 확인 필요
-```
-
-**원인**: API Key 불일치
-
-**해결**:
-```powershell
-# 1. .env.local 확인
-type .env.local
-# NEWS_CRAWLER_API_KEY 값 확인
-
-# 2. Docker 재시작
-docker-compose down
-docker-compose --env-file .env.local up -d
-
-# 3. Backend 재시작 (IntelliJ)
-```
-
----
-
-#### 2. "Backend 연결 실패"
-
-**증상**:
-```
-❌ API 요청 실패: Connection refused
-```
-
-**원인**: Backend가 실행되지 않음
-
-**해결**:
-```powershell
-# 1. Backend 포트 확인
-netstat -ano | findstr :8080
-
-# 2. Backend 실행 확인 (IntelliJ 콘솔)
-# "Started AptApplication" 메시지 확인
-
-# 3. 브라우저에서 확인
-# http://localhost:8080/api/news
-```
-
----
-
-#### 3. "뉴스가 수집되지 않음"
-
-**증상**:
-```
-매일경제: 0개 뉴스 수집
-```
-
-**원인**: 키워드 매칭 실패 또는 RSS 피드 변경
-
-**해결**:
-```yaml
-# config.yaml 키워드 확인 및 추가
-keywords:
-  부동산:
-    - "아파트"
-    - "분양"
-    # 더 많은 키워드 추가
-```
-
-**디버깅**:
-```python
-# crawler.py에 로그 추가
-logger.debug(f"제목: {title}, 카테고리: {category}")
-```
-
----
-
-#### 4. "중복 뉴스만 발생"
-
-**증상**:
-```
-⚠️  중복 뉴스: [부동산] ...
-⚠️  중복 뉴스: [부동산] ...
-```
-
-**원인**: 이미 수집된 뉴스 (정상)
-
-**확인**:
-```sql
--- 마지막 수집 시간 확인
-SELECT MAX(created_date) FROM news;
-```
-
-**해결**: 문제 없음 (중복 방지가 정상 작동 중)
-
----
-
-#### 5. "Docker 컨테이너가 시작 안 됨"
-
-**증상**:
-```powershell
-docker-compose ps
-# news-crawler    Exit 1
-```
-
-**원인**: Python 코드 오류 또는 환경변수 문제
-
-**해결**:
-```powershell
-# 1. 로그 확인
-docker-compose logs news-crawler
-
-# 2. 직접 실행하여 에러 확인
-docker-compose run --rm news-crawler python crawler.py
-
-# 3. 환경변수 확인
-docker-compose config
-```
-
----
-
-#### 6. "PostgreSQL 데이터가 사라짐"
-
-**원인**: `docker-compose down -v` 실행 (볼륨 삭제)
-
-**해결**:
-```powershell
-# 볼륨 삭제 없이 중지
-docker-compose down
-
-# 데이터 백업 (중요한 경우)
-docker-compose exec postgres pg_dump -U postgres bugmaker_local > backup.sql
-```
-
----
-
-### 🔧 디버깅 팁
-
-#### 크롤러 내부 확인
-
-```powershell
-# 컨테이너 내부 접속
-docker-compose exec news-crawler sh
-
-# Python 직접 실행
-python crawler.py
-
-# 환경변수 확인
-echo $BACKEND_URL
-echo $NEWS_CRAWLER_API_KEY
-
-# 종료
-exit
-```
-
-#### 네트워크 연결 확인
-
-```powershell
-# 크롤러에서 Backend 연결 테스트
-docker-compose exec news-crawler ping host.docker.internal
-
-# 포트 확인
-docker-compose exec news-crawler curl http://host.docker.internal:8080/api/news
-```
-
----
-
-## 📚 참고 자료
-
-### 공식 문서
-- [Spring Boot](https://spring.io/projects/spring-boot)
-- [Docker Compose](https://docs.docker.com/compose/)
-- [Feedparser](https://feedparser.readthedocs.io/)
-- [Python Requests](https://requests.readthedocs.io/)
-
-### 내부 문서
-- Backend API 명세: (추가 예정)
-- 배포 가이드: (추가 예정)
-
----
-
-## 📝 변경 이력
-
-| 날짜 | 버전 | 변경 내용 | 작성자 |
-|------|------|-----------|--------|
-| 2026-01-09 | 1.0.0 | 초기 작성 | pk |
-
----
-
-## 🤝 기여하기
-
-### RSS 출처 추가
-
-1. `scripts/news-crawler/config.yaml` 수정
-2. `rss_sources`에 새 출처 추가
-3. 테스트 후 PR 생성
-
-### 키워드 개선
-
-1. 수집된 뉴스 분석
-2. 누락된 키워드 파악
-3. `keywords` 섹션에 추가
-
----
-
-**작성일**: 2026-01-09  
-**버전**: 1.0.0  
-**문의**: 프로젝트 리더에게 문의

@@ -9,20 +9,37 @@ import yaml
 import time
 import logging
 from datetime import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 import os
 from typing import List, Dict, Optional
 
+# ========================================
 # 환경 변수 로드
+# ========================================
+# 1. 현재 디렉토리 .env 시도 (로컬 개발용)
 load_dotenv()
 
+# 2. backend/.env.dev 시도 (운영 환경용)
+current_dir = Path(__file__).resolve().parent
+backend_env_dev = current_dir.parent.parent / "backend" / ".env.dev"
+
+if backend_env_dev.exists() and not os.getenv('BASE_URL'):
+    # .env.dev 파일이 있고, 환경변수가 아직 설정 안 된 경우
+    load_dotenv(backend_env_dev)
+    env_source = str(backend_env_dev)
+else:
+    env_source = "환경변수 또는 Docker"
+
+# ========================================
 # 로깅 설정
+# ========================================
 logging.basicConfig(
     level=getattr(logging, os.getenv('LOG_LEVEL', 'INFO')),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('crawler.log', encoding='utf-8'),
-        logging.StreamHandler()
+        logging.FileHandler('crawler.log', encoding='utf-8'),   # ← 파일로 저장
+        logging.StreamHandler()                                 # ← 콘솔로 출력
     ]
 )
 logger = logging.getLogger(__name__)
@@ -38,7 +55,23 @@ class NewsCrawler:
         Args:
             config_path: 설정 파일 경로
         """
-        self.backend_url = os.getenv('BACKEND_URL', 'http://localhost:8080')
+        # BASE_URL 사용
+        base_url = os.getenv('BASE_URL', 'http://localhost:8080')
+
+        # Docker 환경에서 host.docker.internal로 변환
+        if 'localhost' in base_url or '127.0.0.1' in base_url:
+            # 로컬 환경 체크
+            if os.path.exists('/.dockerenv'):
+                # Docker 컨테이너 내부
+                self.backend_url = base_url.replace('localhost', 'host.docker.internal')
+                self.backend_url = self.backend_url.replace('127.0.0.1', 'host.docker.internal')
+            else:
+                # 일반 환경
+                self.backend_url = base_url
+        else:
+            # 운영 환경
+            self.backend_url = base_url
+
         self.api_key = os.getenv('NEWS_CRAWLER_API_KEY', '')
         
         # 설정 파일 로드
@@ -48,9 +81,10 @@ class NewsCrawler:
         self.rss_sources = self.config['rss_sources']
         self.keywords = self.config['keywords']
         self.crawler_config = self.config['crawler']
-        
+
+        logger.info(f"환경변수 로드: {env_source}")
         logger.info(f"크롤러 초기화 완료 - Backend: {self.backend_url}")
-    
+
     def classify_category(self, title: str, content: str) -> Optional[str]:
         """
         제목과 내용을 기반으로 카테고리 분류

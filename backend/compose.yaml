@@ -10,14 +10,14 @@ services:
     ports:
       - '5432:5432'
 
-  #  Python 크롤러 추가
+  #  Python 크롤러 추가 (개발 환경 에서만 사용)
   news-crawler:
     build:
       context: ../scripts/news-crawler
       dockerfile: Dockerfile
     container_name: bugmaker-news-crawler
     environment:
-      - BACKEND_URL=http://host.docker.internal:8080
+      - BASE_URL=${BASE_URL}
       - NEWS_CRAWLER_API_KEY=${NEWS_CRAWLER_API_KEY}
       - LOG_LEVEL=INFO
     restart: unless-stopped

@@ -10,9 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 환경 변수 (기본값공란, docker-compose에서 오버라이드)
-ENV BACKEND_URL=http://backend:8080
+ENV BACKEND_URL=""
 ENV NEWS_CRAWLER_API_KEY=""
 ENV LOG_LEVEL=INFO
 
 # 스케줄러 실행
-CMD ["python", "scheduler.py"]
+CMD ["python", "crawler.py"]
