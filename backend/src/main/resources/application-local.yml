@@ -75,6 +75,6 @@ redirect:
   HOST_DOMAIN: http://localhost:5173
 
   # News Crawler API Key
-  news:
-    crawler:
-      api-key: ${NEWS_CRAWLER_API_KEY}
+news:
+  crawler:
+    api-key: ${NEWS_CRAWLER_API_KEY}
