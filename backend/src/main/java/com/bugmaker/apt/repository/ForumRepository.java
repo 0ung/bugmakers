@@ -16,7 +16,7 @@ public interface ForumRepository extends Repository<Forum, Long> {
 
     Optional<Forum> findById(Long id);
 
-    @Query("SELECT f FROM Forum f")
+    @Query("SELECT f FROM Forum f join fetch f.member m")
     Slice<Forum> findForumAll(Pageable pageable);
 
     //todo : forum만 완성 되어서 일단 이렇게 하고 나중에는 type=comments, type=liked 와 같이 통합으로 myPage api진행 하도록
