@@ -1,6 +1,7 @@
 package com.bugmaker.apt.service.member.oauth;
 
-import com.bugmaker.apt.common.exception.MemberDeactivatedException;
+import com.bugmaker.apt.common.exception.errorcode.ErrorCode;
+import com.bugmaker.apt.common.exception.custom.MemberDeactivatedException;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.member.NicknameCreator;
 import com.bugmaker.apt.dto.member.oauth.CustomOAuth2User;
@@ -59,9 +60,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (!member.isActive()) {
             log.warn("정지된 회원의 로그인 시도 차단 - MemberId: {}, Email: {}, Status: {}",
                     member.getId(), email, member.getStatus());
-            throw new MemberDeactivatedException(
-                    "계정이 정지되었습니다. 관리자에게 문의하세요."
-            );
+            throw new MemberDeactivatedException(ErrorCode.DEACTIVATED_MEMBER);
         }
 
         // 6. nameAttributeKey를 application.yml에서 가져오기

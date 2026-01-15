@@ -1,5 +1,7 @@
 package com.bugmaker.apt.service.forum;
 
+import com.bugmaker.apt.common.exception.errorcode.ErrorCode;
+import com.bugmaker.apt.common.exception.custom.IncludeImproperWordsException;
 import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.forum.ForumCreateRequest;
 import com.bugmaker.apt.domain.forum.ForumDeleteRequest;
@@ -80,7 +82,7 @@ public class ForumService {
     private void checkCurse(String title, String content) {
         // FIXME: 부절절한 단어 필터링하는 api 등 기능 넣을지 고민
         if (title.contains("멍청이")) {
-            throw new IllegalArgumentException("부적절한 단어가 들어가있습니다.");
+            throw new IncludeImproperWordsException(ErrorCode.INCLUDE_IMPROPER_WORDS);
         }
     }
 

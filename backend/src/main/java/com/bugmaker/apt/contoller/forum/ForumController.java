@@ -1,6 +1,7 @@
 package com.bugmaker.apt.contoller.forum;
 
 
+import com.bugmaker.apt.common.response.ApiResponse;
 import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.forum.ForumCreateRequest;
 import com.bugmaker.apt.domain.forum.ForumDeleteRequest;
@@ -20,7 +21,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.data.domain.Sort.Direction.DESC;
-import static org.springframework.http.HttpStatus.CREATED;
 
 @Slf4j
 @RestController
@@ -29,11 +29,11 @@ public class ForumController {
     private final ForumService forumService;
 
     @PostMapping("/api/forum")
-    public ResponseEntity<ForumCreateResponse> postUp(@RequestBody @Valid ForumCreateRequest createRequest,
+    public ApiResponse<ForumCreateResponse> postUp(@RequestBody @Valid ForumCreateRequest createRequest,
                                                      @AuthenticationPrincipal Member member) {
         Forum forum = forumService.postUp(createRequest, member);
 
-        return new ResponseEntity<>(ForumCreateResponse.of(forum), CREATED);
+        return ApiResponse.created(ForumCreateResponse.of(forum));
     }
 
     @PutMapping("/api/forum")
