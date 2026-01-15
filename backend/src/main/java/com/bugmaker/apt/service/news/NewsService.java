@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * 뉴스 서비스
  * RSS 크롤링 데이터 관리 및 뉴스 CRUD
@@ -27,32 +29,65 @@ public class NewsService {
     /**
      * 뉴스 등록 (Python 크롤러용)
      * 중복 체크: 제목과 출처 모두 확인
+     * Idempotent: 중복된 뉴스는 기존 데이터 반환 (예외 없음)
      * 
      * @param request 뉴스 생성 요청
-     * @return 생성된 뉴스 응답
-     * @throws IllegalArgumentException 중복된 뉴스인 경우
+     * @return 생성된 또는 기존 뉴스 응답
+     * @throws IllegalArgumentException 필수 값이 없는 경우
      */
     @Transactional
     public NewsResponse createNews(NewsCreateRequest request) {
+        // 1. Validation: 필수 값 체크
+        validateNewsRequest(request);
+        
         log.info("뉴스 등록 시도 - 제목: {}", request.title());
 
-        // 중복 체크: 제목 또는 출처가 이미 존재하는지 확인
-        if (newsRepository.existsByTitle(request.title())) {
-            log.warn("중복된 뉴스 제목 - {}", request.title());
-            throw new IllegalArgumentException("이미 등록된 뉴스입니다. (제목 중복)");
+        // 2. 중복 체크: 제목으로 기존 뉴스 확인
+        Optional<News> existingByTitle = newsRepository.findByTitle(request.title());
+        if (existingByTitle.isPresent()) {
+            News existing = existingByTitle.get();
+            log.warn("⚠️  중복 뉴스 (제목) - ID: {}, 제목: {}", existing.getId(), existing.getTitle());
+            return NewsResponse.from(existing);
         }
 
-        if (newsRepository.existsByReference(request.reference())) {
-            log.warn("중복된 뉴스 출처 - {}", request.reference());
-            throw new IllegalArgumentException("이미 등록된 뉴스입니다. (출처 중복)");
+        // 3. 중복 체크: 출처로 기존 뉴스 확인
+        Optional<News> existingByReference = newsRepository.findByReference(request.reference());
+        if (existingByReference.isPresent()) {
+            News existing = existingByReference.get();
+            log.warn("⚠️  중복 뉴스 (출처) - ID: {}, 출처: {}", existing.getId(), existing.getReference());
+            return NewsResponse.from(existing);
         }
 
-        // 뉴스 저장
+        // 4. 새 뉴스 저장
         News news = request.toEntity();
         News savedNews = newsRepository.save(news);
 
-        log.info("뉴스 등록 성공 - ID: {}, 제목: {}", savedNews.getId(), savedNews.getTitle());
+        log.info("✅ 뉴스 등록 성공 - ID: {}, 제목: {}", savedNews.getId(), savedNews.getTitle());
         return NewsResponse.from(savedNews);
+    }
+
+    /**
+     * 뉴스 등록 요청 검증
+     * 
+     * @param request 뉴스 생성 요청
+     * @throws IllegalArgumentException 필수 값이 없는 경우
+     */
+    private void validateNewsRequest(NewsCreateRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("뉴스 등록 요청이 null입니다.");
+        }
+        
+        if (request.title() == null || request.title().trim().isEmpty()) {
+            throw new IllegalArgumentException("뉴스 제목은 필수입니다.");
+        }
+        
+        if (request.content() == null || request.content().trim().isEmpty()) {
+            throw new IllegalArgumentException("뉴스 내용은 필수입니다.");
+        }
+        
+        if (request.reference() == null || request.reference().trim().isEmpty()) {
+            throw new IllegalArgumentException("뉴스 출처는 필수입니다.");
+        }
     }
 
     /**

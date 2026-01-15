@@ -6,6 +6,7 @@ RSS 기반 부동산 뉴스 자동 수집 시스템
 
 ## 📋 목차
 
+0. [실행방법](#실행방법)
 1. [개요](#개요)
 2. [목적](#목적)
 3. [주요 기능](#주요-기능)
@@ -15,6 +16,173 @@ RSS 기반 부동산 뉴스 자동 수집 시스템
 7. [실행 방법](#실행-방법)
 8. [신규 팀원 온보딩](#신규-팀원-온보딩)
 9. [문제 해결](#문제-해결)
+
+---
+
+## 실행 방법
+
+### 📋 사전 준비
+
+1. **Docker Desktop 설치 및 실행**
+  - Windows: https://www.docker.com/products/docker-desktop
+  - Docker Desktop이 실행 중인지 확인
+
+2. **환경 변수 확인**
+   ```powershell
+   # backend/.env.local 파일 존재 확인
+   cd backend
+   type .env.local
+   
+   # ENVIRONMENT, CRAWLER_BASE_URL, NEWS_CRAWLER_API_KEY 확인
+   ```
+
+---
+### 🚀 개발환경 실행 순서(local)
+
+#### 1단계: Backend 실행 (IntelliJ)
+#### 2단계: Docker 컨테이너 실행 및 크롤러 로그 확인
+```powershell
+# 1. Backend 디렉토리로 이동
+예) cd C:\Users\sypark1\IdeaProjects\bugmakers\backend
+
+# 2. 컨테이너 중지
+docker-compose down
+
+# 3. Docker 시스템 정리 (안전) (안 쓰는 컨테이너, 이미지 찌꺼기 청소)
+docker system prune -f
+
+# 4. 재시작 with 환경파일
+docker-compose --env-file .env.local up -d
+
+# 5. Docker 컨테이너 상태 확인
+docker ps
+
+# 6. Docker 컨테이너 환경변수 확인하기
+docker exec bugmaker-news-crawler env
+docker exec bugmaker-postgres env 
+
+# 7. Docker volume 확인하기
+docker volume ls
+
+# 8. 크롤링 1회 실행
+docker exec bugmaker-news-crawler python crawler.py
+
+# 9. 로그 확인하기
+# 전체 로그
+docker-compose logs
+
+# 실시간 로그 확인
+docker-compose logs -f news-crawler
+
+# 크롤러 전체 로그 확인
+docker-compose logs news-crawler
+
+# 최근 100줄
+docker-compose logs --tail=100 news-crawler
+
+# 특정 시간 이후 로그
+docker-compose logs --since 2026-01-13T09:00:00 news-crawler
+
+* (참조) 볼륨 완전 삭제 
+docker compose down -v 
+또는 docker volume rm backend_postgres_data -f
+```
+
+---
+
+
+### 🚀 운영환경 실행 순서(dev)
+
+- 운영환경(dev) 배포하기
+- 운영 환경에서 os cron 설정하기
+```powershell
+# 1. 서버 접속
+ssh ubuntu@<dev domain url>
+
+# 2. 프로젝트 클론
+cd /home/ubuntu
+git clone <repository-url>
+cd bugmakers/scripts/news-crawler
+
+# 3. Python 및 의존성 설치
+python3 --version
+sudo apt update
+sudo apt install python3-pip -y
+pip3 install -r requirements.txt
+
+# 4. backend/.env.dev 확인 (선택)
+cat ../../backend/.env.dev
+
+# 5. Cron 설정
+chmod +x deploy/setup_cron.sh
+./deploy/setup_cron.sh
+
+# "지금 테스트 실행하시겠습니까? (y/n):" 
+# → y 입력 (테스트 실행)
+
+# 6. 확인
+# Cron 등록 확인
+crontab -l
+
+# 로그 확인
+tail -f /var/log/news-crawler.log
+
+```
+- 운영환경 실행하기
+```powershell
+// 1. cron 목록 조회 & 실행 확인 
+# 현재 사용자의 Cron 작업 목록 확인
+crontab -l
+
+# 예시 결과 : 
+0 9,15,21 * * * cd /home/ubuntu/bugmakers/scripts/news-crawler && /usr/bin/python3 crawler.py >> /var/log/news-crawler.log 2>&1
+
+# Cron 데몬이 실행 중인지 확인
+sudo service cron status
+
+# 현재 시간 확인
+date
+
+# 온라인 도구
+https://crontab.guru
+0 9,15,21 * * * 입력하면 설명 확인 가능
+
+// 2. 운영 환경에서 크롤링 로그 확인하기 
+# 실시간 로그 확인
+tail -f /var/log/news-crawler.log
+
+# 전체 로그 확인
+cat /var/log/news-crawler.log
+
+# 최근 100줄
+tail -100 /var/log/news-crawler.log
+
+# 오늘 로그
+grep "$(date +%Y-%m-%d)" /var/log/news-crawler.log
+
+# 특정 날짜 로그 (예: 2026-01-13)
+grep "2026-01-13" /var/log/news-crawler.log
+
+# 에러 로그만 보기
+grep "ERROR" /var/log/news-crawler.log
+
+# 에러 + 경고
+grep -E "ERROR|WARNING" /var/log/news-crawler.log
+
+# 성공한 뉴스만 보기
+grep "✅ 뉴스 등록 성공" /var/log/news-crawler.log
+
+# 중복 뉴스 확인
+grep "⚠️  중복 뉴스" /var/log/news-crawler.log
+
+# 크롤링 완료 통계 확인
+grep "크롤링 완료" /var/log/news-crawler.log | tail -10
+
+# 로그 크기 확인
+ls -lh /var/log/news-crawler.log
+```
+
+
 
 ---
 
@@ -551,193 +719,5 @@ NEWS_CRAWLER_API_KEY=
 **Python Crawler**:
 - 로컬: Docker Compose가 `BASE_URL` 환경변수 주입
 - 운영: crawler.py가 직접 `backend/.env.dev`에서 `BASE_URL` 읽기
-
----
-
-## 실행 방법
-
-### 📋 사전 준비
-
-1. **Docker Desktop 설치 및 실행**
-    - Windows: https://www.docker.com/products/docker-desktop
-    - Docker Desktop이 실행 중인지 확인
-
-2. **환경 변수 확인**
-   ```powershell
-   # backend/.env.local 파일 존재 확인
-   cd backend
-   type .env.local
-   
-   # NEWS_CRAWLER_API_KEY 확인
-   ```
-
----
-### 🚀 개발환경 실행 순서(local)
-
-#### 1단계: Backend 실행 (IntelliJ)
-#### 2단계: Docker 컨테이너 실행 및 크롤러 로그 확인
-```powershell
-// 1. Backend 디렉토리로 이동
-예) cd C:\Users\sypark1\IdeaProjects\bugmakers\backend
-
-// 2. Docker Compose 실행 (.env.local 환경 파일 로드)
-docker-compose --env-file .env.local up -d
-
-// 3. 실행 중인 컨테이너 확인
-docker-compose ps
-
-# 예시 결과 :
-PS C:\Users\sypark1\IdeaProjects\bugmakers\backend> docker-compose ps                  
-time="2026-01-13T09:16:00+09:00" level=warning msg="The \"NEWS_CRAWLER_API_KEY\" variable is not set. Defaulting to a blank string."
-NAME                    IMAGE                  COMMAND                   SERVICE        CREATED        STATUS          PORTS
-bugmaker-news-crawler   backend-news-crawler   "python scheduler.py"     news-crawler   3 days ago     Up 47 minutes
-bugmaker-postgres       postgres:latest        "docker-entrypoint.s…"   postgres       23 hours ago   Up 47 minutes   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
-
-// 4. 로그 확인
-# 전체 로그
-docker-compose logs
-
-# 실시간 로그 확인
-docker-compose logs -f news-crawler
-
-# 크롤러 전체 로그 확인
-docker-compose logs news-crawler
-
-# 최근 100줄
-docker-compose logs --tail=100 news-crawler
-
-# 특정 시간 이후 로그
-docker-compose logs --since 2026-01-13T09:00:00 news-crawler
-
-// 5. 기타
-# Docker 컨테이너 중지
-docker-compose down
-
-# 전체 재시작
-docker-compose down
-docker-compose --env-file .env.local up -d
-
-# 크롤러만 재시작 (코드 수정 후)
-docker-compose restart news-crawler
-
-# 크롤러 재빌드 (Dockerfile 수정 후)
-docker-compose build news-crawler
-docker-compose up -d news-crawler
-
-# 수동 크롤링 실행(스케줄 대기 없이 즉시 크롤링 실행)
-docker-compose exec news-crawler python crawler.py
-
-```
-
-**성공 시 로그**:
-```
-============================================================
-뉴스 크롤링 시작
-============================================================
-RSS 피드 가져오기: 네이버 부동산
-네이버 부동산: 0개 뉴스 수집
-RSS 피드 가져오기: 매일경제
-매일경제: 27개 뉴스 수집
-✅ 뉴스 등록 성공: [부동산] 서울 아파트 가격 상승...
-✅ 뉴스 등록 성공: [정책] 정부, 청약 규제 완화...
-⚠️  중복 뉴스: [시장] 전세가율 70% 돌파...
-============================================================
-크롤링 완료 - 수집: 27개, 저장: 15개
-============================================================
-```
-
----
-
-
-### 🚀 운영환경 실행 순서(dev)
-
-- 운영환경(dev) 배포하기
-- 운영 환경에서 os cron 설정하기
-```powershell
-# 1. 서버 접속
-ssh ubuntu@<dev domain url>
-
-# 2. 프로젝트 클론
-cd /home/ubuntu
-git clone <repository-url>
-cd bugmakers/scripts/news-crawler
-
-# 3. Python 및 의존성 설치
-python3 --version
-sudo apt update
-sudo apt install python3-pip -y
-pip3 install -r requirements.txt
-
-# 4. backend/.env.dev 확인 (선택)
-cat ../../backend/.env.dev
-
-# 5. Cron 설정
-chmod +x deploy/setup_cron.sh
-./deploy/setup_cron.sh
-
-# "지금 테스트 실행하시겠습니까? (y/n):" 
-# → y 입력 (테스트 실행)
-
-# 6. 확인
-# Cron 등록 확인
-crontab -l
-
-# 로그 확인
-tail -f /var/log/news-crawler.log
-
-```
-- 운영환경 실행하기
-```powershell
-// 1. cron 목록 조회 & 실행 확인 
-# 현재 사용자의 Cron 작업 목록 확인
-crontab -l
-
-# 예시 결과 : 
-0 9,15,21 * * * cd /home/ubuntu/bugmakers/scripts/news-crawler && /usr/bin/python3 crawler.py >> /var/log/news-crawler.log 2>&1
-
-# Cron 데몬이 실행 중인지 확인
-sudo service cron status
-
-# 현재 시간 확인
-date
-
-# 온라인 도구
-https://crontab.guru
-0 9,15,21 * * * 입력하면 설명 확인 가능
-
-// 2. 운영 환경에서 크롤링 로그 확인하기 
-# 실시간 로그 확인
-tail -f /var/log/news-crawler.log
-
-# 전체 로그 확인
-cat /var/log/news-crawler.log
-
-# 최근 100줄
-tail -100 /var/log/news-crawler.log
-
-# 오늘 로그
-grep "$(date +%Y-%m-%d)" /var/log/news-crawler.log
-
-# 특정 날짜 로그 (예: 2026-01-13)
-grep "2026-01-13" /var/log/news-crawler.log
-
-# 에러 로그만 보기
-grep "ERROR" /var/log/news-crawler.log
-
-# 에러 + 경고
-grep -E "ERROR|WARNING" /var/log/news-crawler.log
-
-# 성공한 뉴스만 보기
-grep "✅ 뉴스 등록 성공" /var/log/news-crawler.log
-
-# 중복 뉴스 확인
-grep "⚠️  중복 뉴스" /var/log/news-crawler.log
-
-# 크롤링 완료 통계 확인
-grep "크롤링 완료" /var/log/news-crawler.log | tail -10
-
-# 로그 크기 확인
-ls -lh /var/log/news-crawler.log
-```
 
 ---

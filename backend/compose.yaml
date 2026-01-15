@@ -1,25 +1,54 @@
 services:
   # PostgreSQL 데이터베이스
   postgres:
-    image: 'postgres:latest'
+    # 버전 고정: 'latest' 사용 시 자동 업데이트로 호환성 문제 발생 가능
+    image: 'postgres:15-alpine'
     container_name: bugmaker-postgres
     environment:
-      - 'POSTGRES_DB=bugmaker_local'
-      - 'POSTGRES_PASSWORD=postgres'
-      - 'POSTGRES_USER=postgres'
+      - 'POSTGRES_DB=${LOCAL_DB}'
+      - 'POSTGRES_PASSWORD=${LOCAL_DB_USERNAME}'
+      - 'POSTGRES_USER=${LOCAL_DB_PASSWORD}'
     ports:
       - '5432:5432'
+    # 볼륨 마운트: 컨테이너 재시작/삭제 시에도 데이터 보존
+    # docker-compose down 시에도 데이터 유지됨
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # 헬스체크: 다른 서비스가 DB 준비 완료를 기다릴 수 있도록
+    # Backend 시작 전 DB가 완전히 준비될 때까지 대기
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  #  Python 크롤러 추가 (개발 환경 에서만 사용)
+  # Python 뉴스 크롤러 (수동 실행용)
   news-crawler:
+    # 소스 코드로부터 이미지 빌드
     build:
-      context: ../scripts/news-crawler
-      dockerfile: Dockerfile
+      context: ../scripts/news-crawler    # 빌드 컨텍스트 경로
+      dockerfile: Dockerfile              # Dockerfile 위치
+    
     container_name: bugmaker-news-crawler
     environment:
-      - BASE_URL=${BASE_URL}
+      # Crawler Backend URL
+      - BASE_URL=${CRAWLER_BASE_URL}
+      # 뉴스 크롤러 API 인증키
       - NEWS_CRAWLER_API_KEY=${NEWS_CRAWLER_API_KEY}
       - LOG_LEVEL=INFO
-    restart: unless-stopped
+      - ENVIRONMENT=${ENVIRONMENT}
+    # host.docker.internal 매핑
+    # Docker Desktop(Windows/Mac)에서는 자동이지만 명시적으로 설정
+    # Linux에서 필요
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # postgres가 healthy 상태가 되면 시작
+    # 실제로는 수동 실행(docker exec)하므로 큰 의미 없지만
+    # 자동 실행 전환 시를 대비해 유지
+    depends_on:
+      postgres:
+        condition: service_healthy
+# 볼륨 정의
+volumes:
+  postgres_data:
+    driver: local    # 로컬 디스크에 저장

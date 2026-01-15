@@ -9,8 +9,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/* crawler 작동 시, 중복 news를 가져오는 순간 실행 멈추도록 uk 추가함 */
 @Entity
-@Table(name = "news")
+@Table(name = "news", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_news_title", columnNames = "title"),
+    @UniqueConstraint(name = "uk_news_reference", columnNames = "reference")
+})
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
