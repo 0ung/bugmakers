@@ -1,6 +1,6 @@
 package com.bugmaker.apt.service.member.oauth;
 
-import com.bugmaker.apt.common.exception.MemberDeactivatedException;
+import com.bugmaker.apt.common.exception.custom.MemberDeactivatedException;
 import com.bugmaker.apt.constants.IllegalReason;
 import com.bugmaker.apt.constants.Status;
 import com.bugmaker.apt.domain.member.Member;
