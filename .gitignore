@@ -65,8 +65,16 @@ logs/
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Proto 자동 생성 파일 (전부 제외)
+protos/
+
+# 로그
+crawler.log
 
 # =========================
 # ROOT NODE MODULES (if ever created)

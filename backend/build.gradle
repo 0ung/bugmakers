@@ -4,6 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
     id 'checkstyle'
     id 'com.github.spotbugs' version "6.4.2"
+	id 'com.google.protobuf' version '0.9.4'
 }
 
 group = 'com.bugmaker'
@@ -62,6 +63,35 @@ repositories {
 	mavenCentral()
 }
 
+// ===== Protobuf 설정 추가 =====
+protobuf {
+	protoc {
+		artifact = 'com.google.protobuf:protoc:3.24.0'
+	}
+	plugins {
+		grpc {
+			artifact = 'io.grpc:protoc-gen-grpc-java:1.59.0'
+		}
+	}
+	generateProtoTasks {
+		all().each { task ->
+			task.plugins {
+				grpc {}
+			}
+		}
+	}
+}
+
+// ===== Protobuf 생성 파일을 소스로 인식 =====
+sourceSets {
+	main {
+		java {
+			srcDirs 'build/generated/source/proto/main/grpc'
+			srcDirs 'build/generated/source/proto/main/java'
+		}
+	}
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -95,6 +125,17 @@ dependencies {
 
 	// Swagger (SpringDoc OpenAPI)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+
+// gRPC (dev/prod 환경용)
+	implementation 'net.devh:grpc-server-spring-boot-starter:3.1.0.RELEASE'
+// grpc-server-spring-boot-starter가 버전 관리하도록 명시적 버전 제거 (gRPC 라이브러리 버전이 Docker와 불일치 하는 현상이 발생. 둘다 맞추던가)
+// implementation 'io.grpc:grpc-stub:1.59.0'
+// implementation 'io.grpc:grpc-protobuf:1.59.0'
+// implementation 'io.grpc:grpc-netty-shaded:1.59.0'
+// implementation 'com.google.protobuf:protobuf-java:3.24.0'
+
+	// javax.annotation (Java 11+에서 필요)
+	implementation 'javax.annotation:javax.annotation-api:1.3.2'
 }
 
 tasks.named('test') {

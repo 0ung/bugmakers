@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option java_package = "com.bugmaker.apt.grpc.proto";
+option java_outer_classname = "NewsProto";
+
+package news;
+
+// 뉴스 생성 요청
+message NewsCreateRequest {
+  string title = 1;
+  string content = 2;
+  string reference = 3;
+}
+
+// 뉴스 응답
+message NewsResponse {
+  int64 id = 1;
+  string title = 2;
+  string reference = 3;
+  int64 view_count = 4;
+  int64 heart_count = 5;
+  string created_date = 6;
+}
+
+// 뉴스 서비스
+service NewsService {
+  rpc CreateNews(NewsCreateRequest) returns (NewsResponse);
+}

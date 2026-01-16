@@ -1,4 +1,7 @@
 spring:
+  docker:
+    compose:
+      enabled: false
   datasource:
     driver-class-name: org.postgresql.Driver
     url: ${LOCAL_DB_URL}
