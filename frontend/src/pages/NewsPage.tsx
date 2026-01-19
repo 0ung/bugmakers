@@ -13,6 +13,7 @@ export default function NewsPage() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,6 +31,32 @@ export default function NewsPage() {
   //   },
   //   // ... 나머지 카드 데이터들
   // ];
+
+  // 즐겨찾기 상태 로드 (로그인 사용자만)
+  const loadFavorites = async (newsIds: number[]): Promise<Set<number>> => {
+    try {
+      // 각 뉴스별 즐겨찾기 여부 확인
+      const promises = newsIds.map(id => 
+        api.get<boolean>(`/api/news/${id}/favorite/me`)
+          .then(res => ({ id, isFavorited: res.data }))
+          .catch(() => ({ id, isFavorited: false })) // 에러는 무시 (비로그인)
+      );
+
+      const results = await Promise.all(promises);
+      const newFavorites = new Set<number>();
+      
+      results.forEach(({ id, isFavorited }) => {
+        if (isFavorited) {
+          newFavorites.add(id);
+        }
+      });
+
+      return newFavorites;
+    } catch (error) {
+      console.error('즐겨찾기 상태 로드 실패:', error);
+      return new Set<number>();
+    }
+  };
 
   // 뉴스 목록 불러오기
   const fetchNews = async (pageNumber: number) => {
@@ -58,8 +85,19 @@ export default function NewsPage() {
         };
       });
 
+      // 새로 로드한 뉴스들의 즐겨찾기 상태 확인
+      const newsIds = formattedNews.map(news => news.id);
+      const newFavorites = await loadFavorites(newsIds);
+
       // 기존 목록에 추가
       setNewsList(prev => [...prev, ...formattedNews]);
+      
+      // 즐겨찾기 상태 병합
+      setFavorites(prev => {
+        const merged = new Set(prev);
+        newFavorites.forEach(id => merged.add(id));
+        return merged;
+      });
 
       setHasMore(response.data.number + 1 < response.data.totalPages);
       setPage(prev => prev + 1);
@@ -67,31 +105,7 @@ export default function NewsPage() {
       console.error('뉴스 불러오기 실패:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // 즐겨찾기 상태 로드 (로그인 사용자만)
-  const loadFavorites = async (newsIds: number[]) => {
-    try {
-      // 각 뉴스별 즐겨찾기 여부 확인
-      const promises = newsIds.map(id => 
-        api.get<boolean>(`/api/news/${id}/favorite/me`)
-          .then(res => ({ id, isFavorited: res.data }))
-          .catch(() => ({ id, isFavorited: false })) // 에러는 무시 (비로그인)
-      );
-
-      const results = await Promise.all(promises);
-      const newFavorites = new Set<number>();
-      
-      results.forEach(({ id, isFavorited }) => {
-        if (isFavorited) {
-          newFavorites.add(id);
-        }
-      });
-
-      setFavorites(newFavorites);
-    } catch (error) {
-      console.error('즐겨찾기 상태 로드 실패:', error);
+      setInitialLoading(false);
     }
   };
 
@@ -99,14 +113,6 @@ export default function NewsPage() {
   useEffect(() => {
     fetchNews(0);
   }, []);
-
-  // 뉴스가 로드되면 즐겨찾기 상태 확인
-  useEffect(() => {
-    if (newsList.length > 0) {
-      const newsIds = newsList.map(news => news.id);
-      loadFavorites(newsIds);
-    }
-  }, [newsList.length]);
 
   // 무한 스크롤 감지
   useEffect(() => {
@@ -175,8 +181,8 @@ export default function NewsPage() {
     }
   };
 
-  // 로딩 중
-  if (!loading && newsList.length === 0) {
+  // 초기 로딩 중
+  if (initialLoading) {
     return (
       <MainLayout>
         <div className="max-w-7xl mx-auto text-center py-20">
