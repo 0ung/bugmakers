@@ -4,8 +4,28 @@ import { api } from "../utils/axios";
 
 interface User {
   id: number;
+  createdDate: string;
+  lastModifiedDate: string;
+
+  email?: {
+    address: string;
+  };
+
+  nickname: string;
+  memberRole: "USER" | "ADMIN";
+  status: "ACTIVE" | "INACTIVE";
+
+  provider: "kakao" | "google" | "local";
+  providerId: string;
+
+  active: boolean;
+  enabled: boolean;
   username: string;
-  email?: string;
+
+  authorities: {
+    authority: string;
+  }[];
+
   profileImageUrl?: string;
   // 필요한 필드 추가
 }

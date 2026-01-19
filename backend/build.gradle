@@ -126,7 +126,7 @@ dependencies {
 	// Swagger (SpringDoc OpenAPI)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
-// gRPC (dev/prod 환경용)
+	// gRPC (dev/prod 환경용)
 	implementation 'net.devh:grpc-server-spring-boot-starter:3.1.0.RELEASE'
 // grpc-server-spring-boot-starter가 버전 관리하도록 명시적 버전 제거 (gRPC 라이브러리 버전이 Docker와 불일치 하는 현상이 발생. 둘다 맞추던가)
 // implementation 'io.grpc:grpc-stub:1.59.0'

@@ -15,6 +15,13 @@ export default function Header() {
     if (!isInitialized) loadUser();
   }, [isInitialized, loadUser]);
 
+  // user 변경 감지용 (로그 전용)
+  // useEffect(() => {
+  //   if (user) {
+  //     console.log("user(json):", JSON.stringify(user, null, 2));
+  //   }
+  // }, [user]);
+
   const navList = [
     { name: "부동산뉴스", path: "/news" },
     { name: "시세트렌드", path: "/trend" },
@@ -64,7 +71,7 @@ export default function Header() {
                 onClick={() => navigate("/mypage")}
                 className="text-blue-600 border-2 border-blue-600 px-3 py-1.5 rounded-md hover:bg-blue-50 transition font-medium"
               >
-                {user.username}님
+                {user.nickname}님
               </button>
               <button
                 onClick={async () => {
