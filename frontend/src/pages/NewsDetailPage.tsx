@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/layouts/MainLayout";
 import { api } from "../utils/axios";
 import type { NewsDetail } from "../types/news";
+import { ApiError, ErrorCode } from "../types/error";
 
 export default function NewsDetailPage() {
   //더미 데이터
@@ -32,32 +33,32 @@ export default function NewsDetailPage() {
         setNews(response.data);
         setHeartCount(response.data.heartCount);
         
-        // 2. 조회수 증가 API 호출
-        await api.post(`/api/news/${id}/view`).catch(err => {
-          console.warn("조회수 증가 실패 (무시):", err);
-        });
+        // 2. 조회수 증가 API 호출 (실패해도 무시)
+        api.post(`/api/news/${id}/view`).catch(() => {});
 
         // 3. 좋아요 여부 확인 (로그인 상태에서만)
         try {
           const likedResponse = await api.get<boolean>(`/api/news/${id}/heart/me`);
           setIsLiked(likedResponse.data);
-          console.log("좋아요 여부:", likedResponse.data);
-        } catch (error: any) {
-          // 401 (비로그인) 에러는 무시
-          if (error.response?.status !== 401) {
+        } catch (error) {
+          // 비로그인(401) 에러는 무시
+          if (error instanceof ApiError && !error.hasStatus(401)) {
             console.error("좋아요 여부 확인 실패:", error);
           }
-          setIsLiked(false);
         }
       } catch (error) {
         console.error("뉴스 상세 조회 실패:", error);
+        if (error instanceof ApiError && error.is(ErrorCode.NEWS_NOT_FOUND)) {
+          alert("존재하지 않는 뉴스입니다.");
+          navigate("/news");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchNewsDetail();
-  }, [id]);
+  }, [id, navigate]);
 
   // 좋아요 토글 핸들러
   const handleLikeToggle = async () => {
@@ -65,35 +66,37 @@ export default function NewsDetailPage() {
 
     try {
       if (isLiked) {
-        // 좋아요 취소 (DELETE)
+        // 좋아요 취소
         await api.delete(`/api/news/${id}/heart`);
         setHeartCount(prev => Math.max(0, prev - 1));
         setIsLiked(false);
-        console.log("✅ 좋아요 취소 성공");
       } else {
-        // 좋아요 증가 (POST)
+        // 좋아요 추가
         await api.post(`/api/news/${id}/heart`);
         setHeartCount(prev => prev + 1);
         setIsLiked(true);
-        console.log("✅ 좋아요 추가 성공");
       }
-    } catch (error: any) {
-      console.error("❌ 좋아요 처리 실패:", error);
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        alert("좋아요 처리 중 오류가 발생했습니다.");
+        return;
+      }
 
-      // 에러 메시지 처리
-      if (error.response?.status === 401) {
+      // ApiError로 깔끔하게 에러 처리
+      if (error.hasStatus(401)) {
         alert("로그인이 필요한 기능입니다.");
         navigate("/login");
-      } else if (error.response?.status === 409) {
-        // 이미 좋아요를 누른 경우
-        alert("이미 좋아요를 누른 뉴스입니다.");
+      } else if (error.is(ErrorCode.ALREADY_LIKED)) {
+        alert(error.message);
         setIsLiked(true);
-      } else if (error.response?.status === 404 && isLiked) {
-        // 좋아요를 누르지 않은 뉴스를 취소하려는 경우
-        alert("좋아요를 누르지 않은 뉴스입니다.");
+      } else if (error.is(ErrorCode.NOT_LIKED_YET)) {
+        alert(error.message);
         setIsLiked(false);
+      } else if (error.is(ErrorCode.NEWS_NOT_FOUND)) {
+        alert(error.message);
+        navigate("/news");
       } else {
-        alert("좋아요 처리 중 오류가 발생했습니다.");
+        alert(error.message);
       }
     }
   };

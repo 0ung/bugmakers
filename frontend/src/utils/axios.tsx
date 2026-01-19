@@ -1,4 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { ApiError } from "../types/error";
 
 // 1. 커스텀 설정 타입 정의 (_retry 속성 포함)
 interface CustomRequestConfig extends InternalAxiosRequestConfig {
@@ -26,7 +27,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomRequestConfig;
 
-    if (!originalRequest) return Promise.reject(error);
+    if (!originalRequest) return Promise.reject(ApiError.from(error));
 
     // 401 Unauthorized: Access Token 만료 상황
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -35,7 +36,7 @@ api.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then(() => api(originalRequest))
-          .catch((err) => Promise.reject(err));
+          .catch((err) => Promise.reject(ApiError.from(err)));
       }
 
       originalRequest._retry = true;
@@ -60,17 +61,21 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
 
         // Refresh Token까지 만료된 경우 -> 완전한 로그아웃 처리
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
         window.location.href = "/login";
-        return Promise.reject(refreshError);
+        return Promise.reject(ApiError.from(refreshError));
       }
     }
 
     // 403 Forbidden: 접근 권한 없음
     if (error.response?.status === 403) {
-      alert("접근 권한이 없거나 다시 로그인이 필요합니다.");
+      const apiError = ApiError.from(error);
+      alert(apiError.message);
       window.location.href = "/login";
+      return Promise.reject(apiError);
     }
 
-    return Promise.reject(error);
+    // 모든 에러를 ApiError로 변환
+    return Promise.reject(ApiError.from(error));
   }
 );
