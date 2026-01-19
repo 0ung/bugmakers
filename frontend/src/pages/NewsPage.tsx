@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/layouts/MainLayout";
 import { api } from "../utils/axios";
@@ -7,8 +7,14 @@ import type {NewsItem, NewsPageResponse, NewsUIItem} from "../types/news.ts";
 export default function NewsPage() {
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState<number[]>([]);
+
   const [newsList, setNewsList] = useState<NewsUIItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
 
   // 뉴스 목록 더미
   // const newsList = [
@@ -26,21 +32,20 @@ export default function NewsPage() {
   // ];
 
   // 뉴스 목록 불러오기
-  useEffect(() => {
-    const fetchNews = async () => {
+    const fetchNews = async (pageNumber: number) => {
+      if (loading || !hasMore) return;
+
       try {
         setLoading(true);
         const response = await api.get<NewsPageResponse>('/api/news', {
-          params: { page: 0, size: 12 }
+          params: { page: pageNumber, size: 12 }
         });
 
         // API 데이터를 UI 형식으로 변환
-        const formattedNews = response.data.content.map((news: NewsItem) => {
+        const formattedNews: NewsUIItem[] = response.data.content.map((news: NewsItem) => {
           // 제목에서 카테고리 추출: [부동산] → "부동산"
           const categoryMatch = news.title.match(/^\[([^\]]+)\]/);
           const category = categoryMatch ? categoryMatch[1] : "일반";
-
-          // 제목에서 카테고리 제거
           const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
 
           return {
@@ -53,27 +58,51 @@ export default function NewsPage() {
           };
         });
 
-        setNewsList(formattedNews);
+        // 기존 목록에 추가
+        setNewsList(prev => [...prev, ...formattedNews]);
+
+        setHasMore(response.data.number + 1 < response.data.totalPages);
+        setPage(prev => prev + 1);
       } catch (error) {
         console.error('뉴스 불러오기 실패:', error);
-        setNewsList([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchNews();
+    // 최초 로딩
+    useEffect(() => {
+      fetchNews(0);
   }, []);
 
+  // 무한 스크롤 감지
+  useEffect(() => {
+    if (!bottomRef.current || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            fetchNews(page);
+          }
+        },
+        { threshold: 1 }
+    );
+
+    observer.observe(bottomRef.current);
+    return () => observer.disconnect();
+  }, [page, hasMore]);
+
   const toggleFavorite = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation(); // 카드 클릭 이벤트 전파 방지
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
+    e.stopPropagation();
+    setFavorites(prev =>
+        prev.includes(id)
+            ? prev.filter(favId => favId !== id)
+            : [...prev, id]
     );
   };
 
   // 로딩 중
-  if (loading) {
+  if (!loading && newsList.length === 0) {
     return (
         <MainLayout>
           <div className="max-w-7xl mx-auto text-center py-20">
@@ -148,11 +177,12 @@ export default function NewsPage() {
           ))}
         </section>
 
-        <div className="mt-12 text-center">
-          <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-            더 보기
-          </button>
-        </div>
+        <div ref={bottomRef} className="h-10" />
+        {loading && (
+            <div className="text-center text-gray-500 py-6">
+              뉴스 불러오는 중...
+            </div>
+        )}
       </div>
     </MainLayout>
   );
