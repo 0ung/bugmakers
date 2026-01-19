@@ -15,7 +15,6 @@ export default function NewsPage() {
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-
   // 뉴스 목록 더미
   // const newsList = [
   //   {
@@ -123,6 +122,7 @@ export default function NewsPage() {
     );
   }
 
+  // UI
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto">

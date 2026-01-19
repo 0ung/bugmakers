@@ -1,12 +1,64 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/layouts/MainLayout";
+import { api } from "../utils/axios";
+import type { NewsDetail } from "../types/news";
 
 export default function NewsDetailPage() {
+  //더미 데이터
+  // const [likeCount, setLikeCount] = useState(342);
+
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  const [news, setNews] = useState<NewsDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // UI 상태
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(342);
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // 뉴스 상세 조회
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchNewsDetail = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get<NewsDetail>(`/api/news/${id}`);
+        setNews(response.data);
+      } catch (error) {
+        console.error("뉴스 상세 조회 실패:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewsDetail();
+  }, [id]);
+
+  // 로딩 / 예외 처리
+  if (loading) {
+    return (
+        <MainLayout>
+          <div className="max-w-4xl mx-auto py-20 text-center text-gray-500">
+            뉴스 불러오는 중...
+          </div>
+        </MainLayout>
+    );
+  }
+
+  if (!news) {
+    return (
+        <MainLayout>
+          <div className="max-w-4xl mx-auto py-20 text-center text-gray-500">
+            존재하지 않는 뉴스입니다.
+          </div>
+        </MainLayout>
+    );
+  }
+
+  // UI
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto">
@@ -18,7 +70,7 @@ export default function NewsDetailPage() {
         {/* 대표 이미지와 즐겨찾기 */}
         <div className="relative mb-6">
           <svg
-            onClick={() => setIsFavorite(!isFavorite)}
+            onClick={() => setIsFavorite(prev => !prev)}
             className={`absolute right-4 top-4 w-8 h-8 z-20 cursor-pointer transition-all ${
               isFavorite
                 ? "fill-yellow-400 stroke-yellow-400"
@@ -36,60 +88,73 @@ export default function NewsDetailPage() {
           </svg>
           <img
             src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1000&q=80"
-            alt="뉴스 이미지"
+            alt={news.title}
             className="rounded-2xl shadow w-full object-cover h-72"
           />
         </div>
 
+        {/* 제목 */}
         <h1 className="text-2xl md:text-3xl font-bold mb-3 leading-tight">
-          최근 오른 집값, 경기보다 ‘기대심리’가 더 큰 영향
+          {news.title}
         </h1>
+
+        {/* 메타 정보 */}
         <div className="text-sm text-gray-500 mb-8 pb-4 border-b">
-          <span>2025-11-11</span> · <span>시장동향</span> ·{" "}
-          <span>마이홈 리서치팀</span>
+          <span>
+            {new Date(news.createdDate).toLocaleDateString("ko-KR")}
+          </span>
+          {" · "}
+          <span>조회수 {news.viewCount}</span>
         </div>
 
+        {/* 본문 */}
         <article className="prose prose-lg max-w-none text-gray-700 leading-relaxed space-y-4">
-          <p>
-            서울과 수도권을 중심으로 최근 집값 상승세가 이어지고 있는 가운데...
-          </p>
-          <p>
-            한국은행은 11일 발표한 보고서에서 소비자 심리가 시세에 큰 영향을
-            미친다고 밝혔습니다.
-          </p>
+          <div dangerouslySetInnerHTML={{ __html: news.content }} />
         </article>
+
+        {/* 출처 */}
+        <div className="text-sm text-gray-500 mt-8">
+          출처:{" "}
+          <a
+              href={news.reference}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+          >
+            {news.reference}
+          </a>
+        </div>
 
         {/* 좋아요 & 공유 */}
         <div className="flex items-center justify-center gap-4 py-8 mt-8 border-t border-b border-gray-100">
           <button
-            onClick={() => {
-              setIsLiked(!isLiked);
-              setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
-            }}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full border-2 transition-all ${
-              isLiked
-                ? "border-red-500 bg-red-50"
-                : "border-gray-200 hover:bg-gray-50"
-            }`}
+              onClick={() => setIsLiked(prev => !prev)}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full border-2 transition-all ${
+                  isLiked
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-200 hover:bg-gray-50"
+              }`}
           >
             <span>{isLiked ? "❤️" : "🤍"}</span>
             <span className="font-medium text-gray-700">
-              좋아요 {likeCount}
+              좋아요 {news.heartCount + (isLiked ? 1 : 0)}
             </span>
           </button>
+
           <button className="flex items-center gap-2 px-6 py-2 rounded-full border-2 border-gray-200 hover:bg-gray-50">
             <span>🔗</span>{" "}
             <span className="font-medium text-gray-700">공유하기</span>
           </button>
         </div>
 
+        {/* 목록 이동 */}
         <div className="text-center mt-10">
-          <Link
-            to="/news"
-            className="inline-block px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+          <button
+              onClick={() => navigate(-1)}
+              className="inline-block px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
           >
             목록으로 돌아가기
-          </Link>
+          </button>
         </div>
       </div>
     </MainLayout>
