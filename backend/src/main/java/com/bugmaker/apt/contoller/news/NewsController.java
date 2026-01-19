@@ -81,7 +81,7 @@ public class NewsController {
 
     /**
      * 뉴스 목록 조회 (페이징)
-     * 최신순 정렬
+     * 최신순 정렬 (createdDate DESC, id DESC)
      * 
      * GET /api/news?page=0&size=10
      * 
@@ -102,8 +102,13 @@ public class NewsController {
 
         log.info("뉴스 목록 조회 - 페이지: {}, 사이즈: {}", page, size);
 
-        // 최신순 정렬 (createdDate DESC)
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+        // 최신순 정렬 (createdDate DESC, id DESC)
+        // id를 secondary sort로 추가하여 안정적인 페이징 보장
+        Sort sort = Sort.by(
+                Sort.Order.desc("createdDate"),
+                Sort.Order.desc("id")
+        );
+        Pageable pageable = PageRequest.of(page, size, sort);
         Page<NewsResponse> newsPage = newsService.getNewsList(pageable);
 
         return ResponseEntity.ok(newsPage);

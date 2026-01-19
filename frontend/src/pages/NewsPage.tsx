@@ -16,6 +16,7 @@ export default function NewsPage() {
   const [initialLoading, setInitialLoading] = useState(true);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const isMounted = useRef(false); // React Strict Mode 대응
 
   // 뉴스 목록 더미
   // const newsList = [
@@ -101,6 +102,7 @@ export default function NewsPage() {
 
       setHasMore(response.data.number + 1 < response.data.totalPages);
       setPage(prev => prev + 1);
+      // setPage(response.data.number + 1);
     } catch (error) {
       console.error('뉴스 불러오기 실패:', error);
     } finally {
@@ -109,18 +111,20 @@ export default function NewsPage() {
     }
   };
 
-  // 최초 로딩
+  // 최초 로딩 (React Strict Mode 대응)
   useEffect(() => {
+    if (isMounted.current) return;
+    isMounted.current = true;
     fetchNews(0);
   }, []);
 
   // 무한 스크롤 감지
   useEffect(() => {
-    if (!bottomRef.current || !hasMore) return;
+    if (!bottomRef.current || !hasMore || loading) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && !loading) {
           fetchNews(page);
         }
       },
@@ -129,7 +133,7 @@ export default function NewsPage() {
 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
-  }, [page, hasMore]);
+  }, [page, hasMore, loading]);
 
   // 즐겨찾기 토글
   const toggleFavorite = async (e: React.MouseEvent, id: number) => {
@@ -146,12 +150,10 @@ export default function NewsPage() {
           newSet.delete(id);
           return newSet;
         });
-        console.log("✅ 즐겨찾기 취소 성공");
       } else {
         // 즐겨찾기 추가
         await api.post(`/api/news/${id}/favorite`);
         setFavorites(prev => new Set(prev).add(id));
-        console.log("✅ 즐겨찾기 추가 성공");
       }
     } catch (error) {
       if (!(error instanceof ApiError)) {
@@ -159,7 +161,6 @@ export default function NewsPage() {
         return;
       }
 
-      // ApiError로 깔끔하게 에러 처리
       if (error.hasStatus(401)) {
         alert("로그인이 필요한 기능입니다.");
         navigate("/login");
