@@ -18,7 +18,7 @@ export default function NewsDetailPage() {
   const [heartCount, setHeartCount] = useState(0);
   const [shareCount, setShareCount] = useState(0);
 
-  // 뉴스 상세 조회 및 좋아요 여부 확인
+  // 뉴스 상세 조회 및 상태 확인
   useEffect(() => {
     if (!id) return;
 
@@ -43,6 +43,17 @@ export default function NewsDetailPage() {
           // 비로그인(401) 에러는 무시
           if (error instanceof ApiError && !error.hasStatus(401)) {
             console.error("좋아요 여부 확인 실패:", error);
+          }
+        }
+
+        // 4. 즐겨찾기 여부 확인 (로그인 상태에서만)
+        try {
+          const favoritedResponse = await api.get<boolean>(`/api/news/${id}/favorite/me`);
+          setIsFavorite(favoritedResponse.data);
+        } catch (error) {
+          // 비로그인(401) 에러는 무시
+          if (error instanceof ApiError && !error.hasStatus(401)) {
+            console.error("즐겨찾기 여부 확인 실패:", error);
           }
         }
       } catch (error) {
@@ -91,6 +102,47 @@ export default function NewsDetailPage() {
       } else if (error.is(ErrorCode.NOT_LIKED_YET)) {
         alert(error.message);
         setIsLiked(false);
+      } else if (error.is(ErrorCode.NEWS_NOT_FOUND)) {
+        alert(error.message);
+        navigate("/news");
+      } else {
+        alert(error.message);
+      }
+    }
+  };
+
+  // 즐겨찾기 토글 핸들러
+  const handleFavoriteToggle = async () => {
+    if (!id) return;
+
+    try {
+      if (isFavorite) {
+        // 즐겨찾기 취소
+        await api.delete(`/api/news/${id}/favorite`);
+        setIsFavorite(false);
+        console.log("✅ 즐겨찾기 취소 성공");
+      } else {
+        // 즐겨찾기 추가
+        await api.post(`/api/news/${id}/favorite`);
+        setIsFavorite(true);
+        console.log("✅ 즐겨찾기 추가 성공");
+      }
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        alert("즐겨찾기 처리 중 오류가 발생했습니다.");
+        return;
+      }
+
+      // ApiError로 깔끔하게 에러 처리
+      if (error.hasStatus(401)) {
+        alert("로그인이 필요한 기능입니다.");
+        navigate("/login");
+      } else if (error.is(ErrorCode.ALREADY_FAVORITED)) {
+        alert(error.message);
+        setIsFavorite(true);
+      } else if (error.is(ErrorCode.NOT_FAVORITED_YET)) {
+        alert(error.message);
+        setIsFavorite(false);
       } else if (error.is(ErrorCode.NEWS_NOT_FOUND)) {
         alert(error.message);
         navigate("/news");
@@ -165,7 +217,7 @@ export default function NewsDetailPage() {
         {/* 대표 이미지와 즐겨찾기 */}
         <div className="relative mb-6">
           <svg
-            onClick={() => setIsFavorite(prev => !prev)}
+            onClick={handleFavoriteToggle}
             className={`absolute right-4 top-4 w-8 h-8 z-20 cursor-pointer transition-all ${
               isFavorite
                 ? "fill-yellow-400 stroke-yellow-400"

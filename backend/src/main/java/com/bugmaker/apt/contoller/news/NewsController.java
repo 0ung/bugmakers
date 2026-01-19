@@ -263,6 +263,104 @@ public class NewsController {
     }
 
     /**
+     * 즐겨찾기 여부 확인
+     * JWT 인증 필요
+     * 
+     * GET /api/news/{id}/favorite/me
+     * 
+     * @param id 뉴스 ID
+     * @param member 현재 로그인한 회원 정보
+     * @return 즐겨찾기 여부 (true/false)
+     */
+    @Operation(
+            summary = "즐겨찾기 여부 확인",
+            description = "현재 사용자가 해당 뉴스를 즐겨찾기했는지 확인합니다. JWT 인증이 필요합니다.",
+            security = @SecurityRequirement(name = "JWT")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/{id}/favorite/me")
+    public ResponseEntity<Boolean> checkFavoritedByMe(
+            @Parameter(description = "뉴스 ID") @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal Member member
+    ) {
+        // 로그인하지 않은 경우 (member가 null인 경우)
+        if (member == null) {
+            return ResponseEntity.ok(false);
+        }
+
+        log.info("즐겨찾기 여부 확인 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
+        
+        boolean isFavorited = newsService.isFavoritedByMe(member.getId(), id);
+        return ResponseEntity.ok(isFavorited);
+    }
+
+    /**
+     * 즐겨찾기 추가
+     * JWT 인증 필요
+     * 
+     * POST /api/news/{id}/favorite
+     * 
+     * @param id 뉴스 ID
+     * @param member 현재 로그인한 회원 정보
+     * @return 성공 메시지
+     */
+    @Operation(
+            summary = "즐겨찾기 추가", 
+            description = "뉴스를 즐겨찾기에 추가합니다. JWT 인증이 필요합니다.",
+            security = @SecurityRequirement(name = "JWT")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "즐겨찾기 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "뉴스를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 즐겨찾기한 뉴스")
+    })
+    @PostMapping("/{id}/favorite")
+    public ResponseEntity<Void> addFavorite(
+            @Parameter(description = "뉴스 ID") @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal Member member
+    ) {
+        log.info("즐겨찾기 추가 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
+        
+        newsService.addFavorite(member.getId(), id);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 즐겨찾기 취소
+     * JWT 인증 필요
+     * 
+     * DELETE /api/news/{id}/favorite
+     * 
+     * @param id 뉴스 ID
+     * @param member 현재 로그인한 회원 정보
+     * @return 성공 메시지
+     */
+    @Operation(
+            summary = "즐겨찾기 취소", 
+            description = "뉴스를 즐겨찾기에서 제거합니다. JWT 인증이 필요합니다.",
+            security = @SecurityRequirement(name = "JWT")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "즐겨찾기 취소 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "뉴스를 찾을 수 없음 또는 즐겨찾기하지 않은 뉴스")
+    })
+    @DeleteMapping("/{id}/favorite")
+    public ResponseEntity<Void> removeFavorite(
+            @Parameter(description = "뉴스 ID") @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal Member member
+    ) {
+        log.info("즐겨찾기 취소 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
+        
+        newsService.removeFavorite(member.getId(), id);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * 신고 증가
      * 
      * POST /api/news/{id}/report

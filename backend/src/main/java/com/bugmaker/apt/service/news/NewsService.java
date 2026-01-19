@@ -2,11 +2,13 @@ package com.bugmaker.apt.service.news;
 
 import com.bugmaker.apt.common.exception.custom.CustomException;
 import com.bugmaker.apt.common.exception.errorcode.ErrorCode;
+import com.bugmaker.apt.domain.common.Favorited;
 import com.bugmaker.apt.domain.common.Liked;
 import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsDetailResponse;
 import com.bugmaker.apt.domain.news.NewsResponse;
+import com.bugmaker.apt.repository.FavoritedRepository;
 import com.bugmaker.apt.repository.LikedRepository;
 import com.bugmaker.apt.repository.NewsRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class NewsService {
 
     private final NewsRepository newsRepository;
     private final LikedRepository likedRepository;
+    private final FavoritedRepository favoritedRepository;
 
     /**
      * 뉴스 등록 (Python 크롤러용)
@@ -217,6 +220,63 @@ public class NewsService {
      */
     public boolean isLikedByMe(Long memberId, Long newsId) {
         return likedRepository.existsByMemberIdAndNewsId(memberId, newsId);
+    }
+
+    /**
+     * 즐겨찾기 추가
+     * 
+     * @param memberId 회원 ID
+     * @param newsId 뉴스 ID
+     * @throws CustomException 이미 즐겨찾기한 경우 또는 뉴스를 찾을 수 없는 경우
+     */
+    @Transactional
+    public void addFavorite(Long memberId, Long newsId) {
+        // 중복 체크
+        if (favoritedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+            throw new CustomException(ErrorCode.ALREADY_FAVORITED);
+        }
+
+        // 뉴스 존재 여부 확인
+        newsRepository.findById(newsId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
+
+        favoritedRepository.save(Favorited.forNews(memberId, newsId));
+        
+        log.info("✅ 즐겨찾기 추가 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
+    }
+
+    /**
+     * 즐겨찾기 취소
+     * 
+     * @param memberId 회원 ID
+     * @param newsId 뉴스 ID
+     * @throws CustomException 즐겨찾기하지 않은 경우 또는 뉴스를 찾을 수 없는 경우
+     */
+    @Transactional
+    public void removeFavorite(Long memberId, Long newsId) {
+        // 즐겨찾기 여부 체크
+        if (!favoritedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+            throw new CustomException(ErrorCode.NOT_FAVORITED_YET);
+        }
+
+        // 뉴스 존재 여부 확인
+        newsRepository.findById(newsId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
+
+        favoritedRepository.deleteByMemberIdAndNewsId(memberId, newsId);
+        
+        log.info("✅ 즐겨찾기 취소 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
+    }
+
+    /**
+     * 즐겨찾기 여부 확인
+     * 
+     * @param memberId 회원 ID
+     * @param newsId 뉴스 ID
+     * @return 즐겨찾기 여부
+     */
+    public boolean isFavoritedByMe(Long memberId, Long newsId) {
+        return favoritedRepository.existsByMemberIdAndNewsId(memberId, newsId);
     }
 
     /**

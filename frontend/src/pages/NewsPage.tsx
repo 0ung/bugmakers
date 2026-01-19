@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/layouts/MainLayout";
 import { api } from "../utils/axios";
 import type {NewsItem, NewsPageResponse, NewsUIItem} from "../types/news.ts";
+import { ApiError, ErrorCode } from "../types/error";
 
 export default function NewsPage() {
   const navigate = useNavigate();
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
   const [newsList, setNewsList] = useState<NewsUIItem[]>([]);
   const [page, setPage] = useState(0);
@@ -31,94 +32,168 @@ export default function NewsPage() {
   // ];
 
   // 뉴스 목록 불러오기
-    const fetchNews = async (pageNumber: number) => {
-      if (loading || !hasMore) return;
+  const fetchNews = async (pageNumber: number) => {
+    if (loading || !hasMore) return;
 
-      try {
-        setLoading(true);
-        const response = await api.get<NewsPageResponse>('/api/news', {
-          params: { page: pageNumber, size: 12 }
-        });
+    try {
+      setLoading(true);
+      const response = await api.get<NewsPageResponse>('/api/news', {
+        params: { page: pageNumber, size: 12 }
+      });
 
-        // API 데이터를 UI 형식으로 변환
-        const formattedNews: NewsUIItem[] = response.data.content.map((news: NewsItem) => {
-          // 제목에서 카테고리 추출: [부동산] → "부동산"
-          const categoryMatch = news.title.match(/^\[([^\]]+)\]/);
-          const category = categoryMatch ? categoryMatch[1] : "일반";
-          const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
+      // API 데이터를 UI 형식으로 변환
+      const formattedNews: NewsUIItem[] = response.data.content.map((news: NewsItem) => {
+        // 제목에서 카테고리 추출: [부동산] → "부동산"
+        const categoryMatch = news.title.match(/^\[([^\]]+)\]/);
+        const category = categoryMatch ? categoryMatch[1] : "일반";
+        const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
 
-          return {
-            id: news.id,
-            category: category,
-            title: titleWithoutCategory,
-            description: "", // API에 description 없음
-            date: new Date(news.createdDate).toLocaleDateString('ko-KR'),
-            image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
-          };
-        });
+        return {
+          id: news.id,
+          category: category,
+          title: titleWithoutCategory,
+          description: "", // API에 description 없음
+          date: new Date(news.createdDate).toLocaleDateString('ko-KR'),
+          image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
+        };
+      });
 
-        // 기존 목록에 추가
-        setNewsList(prev => [...prev, ...formattedNews]);
+      // 기존 목록에 추가
+      setNewsList(prev => [...prev, ...formattedNews]);
 
-        setHasMore(response.data.number + 1 < response.data.totalPages);
-        setPage(prev => prev + 1);
-      } catch (error) {
-        console.error('뉴스 불러오기 실패:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setHasMore(response.data.number + 1 < response.data.totalPages);
+      setPage(prev => prev + 1);
+    } catch (error) {
+      console.error('뉴스 불러오기 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // 최초 로딩
-    useEffect(() => {
-      fetchNews(0);
+  // 즐겨찾기 상태 로드 (로그인 사용자만)
+  const loadFavorites = async (newsIds: number[]) => {
+    try {
+      // 각 뉴스별 즐겨찾기 여부 확인
+      const promises = newsIds.map(id => 
+        api.get<boolean>(`/api/news/${id}/favorite/me`)
+          .then(res => ({ id, isFavorited: res.data }))
+          .catch(() => ({ id, isFavorited: false })) // 에러는 무시 (비로그인)
+      );
+
+      const results = await Promise.all(promises);
+      const newFavorites = new Set<number>();
+      
+      results.forEach(({ id, isFavorited }) => {
+        if (isFavorited) {
+          newFavorites.add(id);
+        }
+      });
+
+      setFavorites(newFavorites);
+    } catch (error) {
+      console.error('즐겨찾기 상태 로드 실패:', error);
+    }
+  };
+
+  // 최초 로딩
+  useEffect(() => {
+    fetchNews(0);
   }, []);
+
+  // 뉴스가 로드되면 즐겨찾기 상태 확인
+  useEffect(() => {
+    if (newsList.length > 0) {
+      const newsIds = newsList.map(news => news.id);
+      loadFavorites(newsIds);
+    }
+  }, [newsList.length]);
 
   // 무한 스크롤 감지
   useEffect(() => {
     if (!bottomRef.current || !hasMore) return;
 
     const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            fetchNews(page);
-          }
-        },
-        { threshold: 1 }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          fetchNews(page);
+        }
+      },
+      { threshold: 1 }
     );
 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
   }, [page, hasMore]);
 
-  const toggleFavorite = (e: React.MouseEvent, id: number) => {
+  // 즐겨찾기 토글
+  const toggleFavorite = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
-    setFavorites(prev =>
-        prev.includes(id)
-            ? prev.filter(favId => favId !== id)
-            : [...prev, id]
-    );
+
+    const isFavorited = favorites.has(id);
+
+    try {
+      if (isFavorited) {
+        // 즐겨찾기 취소
+        await api.delete(`/api/news/${id}/favorite`);
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+        console.log("✅ 즐겨찾기 취소 성공");
+      } else {
+        // 즐겨찾기 추가
+        await api.post(`/api/news/${id}/favorite`);
+        setFavorites(prev => new Set(prev).add(id));
+        console.log("✅ 즐겨찾기 추가 성공");
+      }
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        alert("즐겨찾기 처리 중 오류가 발생했습니다.");
+        return;
+      }
+
+      // ApiError로 깔끔하게 에러 처리
+      if (error.hasStatus(401)) {
+        alert("로그인이 필요한 기능입니다.");
+        navigate("/login");
+      } else if (error.is(ErrorCode.ALREADY_FAVORITED)) {
+        alert(error.message);
+        setFavorites(prev => new Set(prev).add(id));
+      } else if (error.is(ErrorCode.NOT_FAVORITED_YET)) {
+        alert(error.message);
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+      } else if (error.is(ErrorCode.NEWS_NOT_FOUND)) {
+        alert(error.message);
+      } else {
+        alert(error.message);
+      }
+    }
   };
 
   // 로딩 중
   if (!loading && newsList.length === 0) {
     return (
-        <MainLayout>
-          <div className="max-w-7xl mx-auto text-center py-20">
-            <div className="text-gray-500">뉴스를 불러오는 중...</div>
-          </div>
-        </MainLayout>
+      <MainLayout>
+        <div className="max-w-7xl mx-auto text-center py-20">
+          <div className="text-gray-500">뉴스를 불러오는 중...</div>
+        </div>
+      </MainLayout>
     );
   }
 
   // 뉴스가 없을 때
   if (newsList.length === 0) {
     return (
-        <MainLayout>
-          <div className="max-w-7xl mx-auto text-center py-20">
-            <div className="text-gray-500">등록된 뉴스가 없습니다.</div>
-          </div>
-        </MainLayout>
+      <MainLayout>
+        <div className="max-w-7xl mx-auto text-center py-20">
+          <div className="text-gray-500">등록된 뉴스가 없습니다.</div>
+        </div>
+      </MainLayout>
     );
   }
 
@@ -141,9 +216,9 @@ export default function NewsPage() {
                 <svg
                   onClick={(e) => toggleFavorite(e, news.id)}
                   className={`absolute right-3 top-3 w-6 h-6 z-20 cursor-pointer transition-all ${
-                    favorites.includes(news.id)
+                    favorites.has(news.id)
                       ? "fill-yellow-400 stroke-yellow-400"
-                      : "fill-none stroke-gray-300"
+                      : "fill-none stroke-gray-300 hover:stroke-yellow-400"
                   }`}
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -179,9 +254,9 @@ export default function NewsPage() {
 
         <div ref={bottomRef} className="h-10" />
         {loading && (
-            <div className="text-center text-gray-500 py-6">
-              뉴스 불러오는 중...
-            </div>
+          <div className="text-center text-gray-500 py-6">
+            뉴스 불러오는 중...
+          </div>
         )}
       </div>
     </MainLayout>

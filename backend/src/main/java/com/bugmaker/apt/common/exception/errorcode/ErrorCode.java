@@ -17,8 +17,10 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(404,HttpStatus.NOT_FOUND, "요청하신 회원을 찾을 수 없습니다."),
     NEWS_NOT_FOUND(404, HttpStatus.NOT_FOUND, "요청하신 뉴스를 찾을 수 없습니다."),
     NOT_LIKED_YET(404, HttpStatus.NOT_FOUND, "좋아요를 누르지 않은 뉴스입니다."),
+    NOT_FAVORITED_YET(404, HttpStatus.NOT_FOUND, "즐겨찾기하지 않은 뉴스입니다."),
 
     ALREADY_LIKED(409, HttpStatus.CONFLICT, "이미 좋아요를 누른 뉴스입니다."),
+    ALREADY_FAVORITED(409, HttpStatus.CONFLICT, "이미 즐겨찾기한 뉴스입니다."),
 
     INTERNAL_SERVER_ERROR(500, HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다");
 
