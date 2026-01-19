@@ -9,6 +9,7 @@ export interface NewsItem {
     reference: string;
     viewCount: number;
     heartCount: number;
+    shareCount: number;
     createdDate: string;
 }
 
@@ -26,6 +27,7 @@ export interface NewsUIItem {
 export interface NewsDetail extends NewsItem {
     content: string;
     reportCount: number;
+    lastModifiedDate: string;
 }
 
 // 뉴스 목록 응답 (페이징)

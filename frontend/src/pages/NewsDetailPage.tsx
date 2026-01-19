@@ -6,9 +6,6 @@ import type { NewsDetail } from "../types/news";
 import { ApiError, ErrorCode } from "../types/error";
 
 export default function NewsDetailPage() {
-  //더미 데이터
-  // const [likeCount, setLikeCount] = useState(342);
-
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -19,6 +16,7 @@ export default function NewsDetailPage() {
   const [isLiked, setIsLiked] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [heartCount, setHeartCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
 
   // 뉴스 상세 조회 및 좋아요 여부 확인
   useEffect(() => {
@@ -32,6 +30,7 @@ export default function NewsDetailPage() {
         const response = await api.get<NewsDetail>(`/api/news/${id}`);
         setNews(response.data);
         setHeartCount(response.data.heartCount);
+        setShareCount(response.data.shareCount);
         
         // 2. 조회수 증가 API 호출 (실패해도 무시)
         api.post(`/api/news/${id}/view`).catch(() => {});
@@ -93,6 +92,38 @@ export default function NewsDetailPage() {
         alert(error.message);
         setIsLiked(false);
       } else if (error.is(ErrorCode.NEWS_NOT_FOUND)) {
+        alert(error.message);
+        navigate("/news");
+      } else {
+        alert(error.message);
+      }
+    }
+  };
+
+  // 공유하기 핸들러
+  const handleShare = async () => {
+    if (!id) return;
+
+    try {
+      // 1. 클립보드에 URL 복사
+      const url = window.location.href;
+      await navigator.clipboard.writeText(url);
+
+      // 2. 공유 수 증가 API 호출
+      await api.post(`/api/news/${id}/share`);
+      setShareCount(prev => prev + 1);
+
+      alert("링크가 클립보드에 복사되었습니다!");
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        // 클립보드 API 에러 또는 기타 에러
+        console.error("공유 처리 실패:", error);
+        alert("공유 처리 중 오류가 발생했습니다.");
+        return;
+      }
+
+      // API 에러 처리
+      if (error.is(ErrorCode.NEWS_NOT_FOUND)) {
         alert(error.message);
         navigate("/news");
       } else {
@@ -205,9 +236,12 @@ export default function NewsDetailPage() {
             </span>
           </button>
 
-          <button className="flex items-center gap-2 px-6 py-2 rounded-full border-2 border-gray-200 hover:bg-gray-50">
+          <button 
+            onClick={handleShare}
+            className="flex items-center gap-2 px-6 py-2 rounded-full border-2 border-gray-200 hover:bg-gray-50"
+          >
             <span>🔗</span>{" "}
-            <span className="font-medium text-gray-700">공유하기</span>
+            <span className="font-medium text-gray-700">공유하기 {shareCount}</span>
           </button>
         </div>
 

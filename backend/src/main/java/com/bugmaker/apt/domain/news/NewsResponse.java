@@ -13,6 +13,7 @@ public record NewsResponse(
         String reference,
         Long viewCount,
         Long heartCount,
+        Long shareCount,
         LocalDateTime createdDate
 ) {
     /**
@@ -25,6 +26,7 @@ public record NewsResponse(
                 news.getReference(),
                 news.getViewCount(),
                 news.getHeartCount(),
+                news.getShareCount(),
                 news.getCreatedDate()
         );
     }

@@ -132,6 +132,7 @@ public class NewsService {
      * 조회수 증가
      * 
      * @param newsId 뉴스 ID
+     * @throws CustomException 뉴스를 찾을 수 없는 경우
      */
     @Transactional
     public void increaseViewCount(Long newsId) {
@@ -142,6 +143,23 @@ public class NewsService {
 
         news.increaseViewCount();
         // JPA 더티 체킹으로 자동 업데이트
+    }
+
+    /**
+     * 공유 수 증가
+     * 
+     * @param newsId 뉴스 ID
+     * @throws CustomException 뉴스를 찾을 수 없는 경우
+     */
+    @Transactional
+    public void increaseShareCount(Long newsId) {
+        log.info("공유 수 증가 - 뉴스 ID: {}", newsId);
+
+        News news = newsRepository.findById(newsId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
+
+        news.increaseShareCount();
+        log.info("✅ 공유 수 증가 완료 - 뉴스 ID: {}, 현재 공유 수: {}", newsId, news.getShareCount());
     }
 
     /**
@@ -205,6 +223,7 @@ public class NewsService {
      * 신고 증가
      * 
      * @param newsId 뉴스 ID
+     * @throws CustomException 뉴스를 찾을 수 없는 경우
      */
     @Transactional
     public void increaseReportCount(Long newsId) {

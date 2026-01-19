@@ -144,6 +144,27 @@ public class NewsController {
     }
 
     /**
+     * 공유 수 증가
+     * 
+     * POST /api/news/{id}/share
+     * 
+     * @param id 뉴스 ID
+     * @return 성공 메시지
+     */
+    @Operation(summary = "공유 수 증가", description = "뉴스 공유 수를 1 증가시킵니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "공유 성공"),
+            @ApiResponse(responseCode = "404", description = "뉴스를 찾을 수 없음")
+    })
+    @PostMapping("/{id}/share")
+    public ResponseEntity<Void> increaseShareCount(@PathVariable Long id) {
+        log.info("공유 수 증가 - 뉴스 ID: {}", id);
+
+        newsService.increaseShareCount(id);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * 좋아요 여부 확인
      * JWT 인증 필요
      * 

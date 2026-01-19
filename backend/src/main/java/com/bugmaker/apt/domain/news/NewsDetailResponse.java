@@ -13,6 +13,7 @@ public record NewsDetailResponse(
         String reference,
         Long viewCount,
         Long heartCount,
+        Long shareCount,
         Long reportCount,
         LocalDateTime createdDate,
         LocalDateTime lastModifiedDate
@@ -28,6 +29,7 @@ public record NewsDetailResponse(
                 news.getReference(),
                 news.getViewCount(),
                 news.getHeartCount(),
+                news.getShareCount(),
                 news.getReportCount(),
                 news.getCreatedDate(),
                 news.getLastModifiedDate()
