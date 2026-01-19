@@ -80,36 +80,54 @@ public class NewsController {
     }
 
     /**
-     * 뉴스 목록 조회 (페이징)
+     * 뉴스 목록 조회 (페이징 + 태그 + 검색)
      * 최신순 정렬 (createdDate DESC, id DESC)
      * 
-     * GET /api/news?page=0&size=10
+     * GET /api/news?page=0&size=10&tag=시장&keyword=아파트
      * 
      * @param page 페이지 번호 (0부터 시작)
      * @param size 페이지 크기
+     * @param tag 태그명 (선택사항, "전체"는 모든 뉴스)
+     * @param keyword 검색어 (선택사항)
      * @return 뉴스 목록
      */
     @Operation(
             summary = "뉴스 목록 조회",
-            description = "최신순으로 정렬된 뉴스 목록을 페이징하여 조회합니다."
+            description = "최신순으로 정렬된 뉴스 목록을 페이징하여 조회합니다. 태그와 검색어로 필터링 가능합니다."
     )
     @GetMapping
     public ResponseEntity<Page<NewsResponse>> getNewsList(
             @Parameter(description = "페이지 번호 (0부터 시작)")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기")
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "태그명 (선택사항)")
+            @RequestParam(required = false) String tag,
+            @Parameter(description = "검색어 (선택사항)")
+            @RequestParam(required = false) String keyword) {
 
-        log.info("뉴스 목록 조회 - 페이지: {}, 사이즈: {}", page, size);
+        log.info("뉴스 목록 조회 - 페이지: {}, 사이즈: {}, 태그: {}, 검색어: {}", page, size, tag, keyword);
 
         // 최신순 정렬 (createdDate DESC, id DESC)
-        // id를 secondary sort로 추가하여 안정적인 페이징 보장
         Sort sort = Sort.by(
                 Sort.Order.desc("createdDate"),
                 Sort.Order.desc("id")
         );
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<NewsResponse> newsPage = newsService.getNewsList(pageable);
+
+        Page<NewsResponse> newsPage;
+
+        // 태그와 검색어 유무에 따른 분기 처리
+        boolean hasTag = tag != null && !tag.trim().isEmpty();
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+
+        if (hasTag || hasKeyword) {
+            // 태그 또는 검색어가 있으면 검색 API 사용
+            newsPage = newsService.searchNews(tag, keyword, pageable);
+        } else {
+            // 태그와 검색어 둘 다 없으면 전체 조회
+            newsPage = newsService.getNewsList(pageable);
+        }
 
         return ResponseEntity.ok(newsPage);
     }
@@ -380,5 +398,17 @@ public class NewsController {
 
         newsService.increaseReportCount(id);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 카테고리 목록 조회
+     */
+    @Operation(summary = "카테고리 목록 조회", description = "뉴스 카테고리 목록을 조회합니다.")
+    @GetMapping("/categories")
+    public ResponseEntity<java.util.List<String>> getNewsCategories() {
+        log.info("뉴스 카테고리 목록 조회");
+
+        java.util.List<String> categories = newsService.getAllCategories();
+        return ResponseEntity.ok(categories);
     }
 }

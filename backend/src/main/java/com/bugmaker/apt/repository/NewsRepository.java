@@ -4,8 +4,11 @@ import com.bugmaker.apt.domain.news.News;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,4 +44,32 @@ public interface NewsRepository extends JpaRepository<News, Long> {
      * 출처 존재 여부 확인
      */
     boolean existsByReference(String reference);
+
+    /**
+     * 카테고리별 뉴스 조회 (페이징)
+     */
+    Page<News> findByCategory(String category, Pageable pageable);
+
+    /**
+     * 카테고리 + 검색어로 뉴스 조회 (페이징)
+     */
+    @Query("SELECT n FROM News n " +
+            "WHERE n.category = :category " +
+            "AND LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<News> findByCategoryAndKeyword(@Param("category") String category,
+                                        @Param("keyword") String keyword,
+                                        Pageable pageable);
+
+    /**
+     * 검색어로 뉴스 조회 (카테고리 필터 없음)
+     */
+    @Query("SELECT n FROM News n " +
+            "WHERE LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<News> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 모든 카테고리 목록 조회 (중복 제거)
+     */
+    @Query("SELECT DISTINCT n.category FROM News n WHERE n.category IS NOT NULL ORDER BY n.category")
+    List<String> findAllCategories();
 }

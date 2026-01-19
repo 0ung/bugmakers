@@ -8,9 +8,7 @@ import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsDetailResponse;
 import com.bugmaker.apt.domain.news.NewsResponse;
-import com.bugmaker.apt.repository.FavoritedRepository;
-import com.bugmaker.apt.repository.LikedRepository;
-import com.bugmaker.apt.repository.NewsRepository;
+import com.bugmaker.apt.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -18,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -66,11 +65,12 @@ public class NewsService {
             return NewsResponse.from(existing);
         }
 
-        // 4. 새 뉴스 저장
+        // 4. 새 뉴스 저장 (카테고리 자동 추출됨)
         News news = request.toEntity();
         News savedNews = newsRepository.save(news);
 
-        log.info("✅ 뉴스 등록 성공 - ID: {}, 제목: {}", savedNews.getId(), savedNews.getTitle());
+        log.info("✅ 뉴스 등록 성공 - ID: {}, 제목: {}, 카테고리: {}",
+                savedNews.getId(), savedNews.getTitle(), savedNews.getCategory());
         return NewsResponse.from(savedNews);
     }
 
@@ -112,6 +112,42 @@ public class NewsService {
         
         log.info("뉴스 목록 조회 완료 - 총 {}건", newsPage.getTotalElements());
         return newsPage.map(NewsResponse::from);
+    }
+
+    /**
+     * 카테고리 + 검색어로 뉴스 조회 (페이징)
+     */
+    public Page<NewsResponse> searchNews(String category, String keyword, Pageable pageable) {
+        log.info("뉴스 검색 - 카테고리: {}, 검색어: {}, 페이지: {}", category, keyword, pageable.getPageNumber());
+
+        Page<News> newsPage;
+
+        boolean hasCategory = category != null && !category.trim().isEmpty();
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+
+        if (!hasKeyword && !hasCategory) {
+            // 전체 조회
+            newsPage = newsRepository.findAll(pageable);
+        } else if (!hasKeyword) {
+            // 카테고리만
+            newsPage = newsRepository.findByCategory(category, pageable);
+        } else if (!hasCategory) {
+            // 검색어만
+            newsPage = newsRepository.findByKeyword(keyword, pageable);
+        } else {
+            // 카테고리 + 검색어
+            newsPage = newsRepository.findByCategoryAndKeyword(category, keyword, pageable);
+        }
+
+        log.info("뉴스 검색 완료 - 카테고리: {}, 검색어: {}, 총 {}건", category, keyword, newsPage.getTotalElements());
+        return newsPage.map(NewsResponse::from);
+    }
+
+    /**
+     * 모든 카테고리 목록 조회
+     */
+    public List<String> getAllCategories() {
+        return newsRepository.findAllCategories();
     }
 
     /**

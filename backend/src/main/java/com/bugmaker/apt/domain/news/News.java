@@ -35,6 +35,9 @@ public class News {
     @Comment("본문")
     private String content;
 
+    @Column(length = 50)
+    private String category;
+
     @Column(nullable = false, length = 500)
     @Comment("출처")
     private String reference;
