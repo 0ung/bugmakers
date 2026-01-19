@@ -50,6 +50,11 @@ public class News {
     private Long heartCount = 0L;
 
     @Column(nullable = false)
+    @Comment("공유 누적수")
+    @Builder.Default
+    private Long shareCount = 0L;
+
+    @Column(nullable = false)
     @Comment("신고 누적수")
     @Builder.Default
     private Long reportCount = 0L;
@@ -77,6 +82,8 @@ public class News {
             this.heartCount--;
         }
     }
+
+    public void increaseShareCount() { this.shareCount++; }
 
     public void increaseReportCount() {
         this.reportCount++;

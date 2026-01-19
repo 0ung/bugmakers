@@ -17,16 +17,38 @@ export default function NewsDetailPage() {
   // UI 상태
   const [isLiked, setIsLiked] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [heartCount, setHeartCount] = useState(0);
 
-  // 뉴스 상세 조회
+  // 뉴스 상세 조회 및 좋아요 여부 확인
   useEffect(() => {
     if (!id) return;
 
     const fetchNewsDetail = async () => {
       try {
         setLoading(true);
+        
+        // 1. 뉴스 상세 조회
         const response = await api.get<NewsDetail>(`/api/news/${id}`);
         setNews(response.data);
+        setHeartCount(response.data.heartCount);
+        
+        // 2. 조회수 증가 API 호출
+        await api.post(`/api/news/${id}/view`).catch(err => {
+          console.warn("조회수 증가 실패 (무시):", err);
+        });
+
+        // 3. 좋아요 여부 확인 (로그인 상태에서만)
+        try {
+          const likedResponse = await api.get<boolean>(`/api/news/${id}/heart/me`);
+          setIsLiked(likedResponse.data);
+          console.log("좋아요 여부:", likedResponse.data);
+        } catch (error: any) {
+          // 401 (비로그인) 에러는 무시
+          if (error.response?.status !== 401) {
+            console.error("좋아요 여부 확인 실패:", error);
+          }
+          setIsLiked(false);
+        }
       } catch (error) {
         console.error("뉴스 상세 조회 실패:", error);
       } finally {
@@ -36,6 +58,45 @@ export default function NewsDetailPage() {
 
     fetchNewsDetail();
   }, [id]);
+
+  // 좋아요 토글 핸들러
+  const handleLikeToggle = async () => {
+    if (!id) return;
+
+    try {
+      if (isLiked) {
+        // 좋아요 취소 (DELETE)
+        await api.delete(`/api/news/${id}/heart`);
+        setHeartCount(prev => Math.max(0, prev - 1));
+        setIsLiked(false);
+        console.log("✅ 좋아요 취소 성공");
+      } else {
+        // 좋아요 증가 (POST)
+        await api.post(`/api/news/${id}/heart`);
+        setHeartCount(prev => prev + 1);
+        setIsLiked(true);
+        console.log("✅ 좋아요 추가 성공");
+      }
+    } catch (error: any) {
+      console.error("❌ 좋아요 처리 실패:", error);
+
+      // 에러 메시지 처리
+      if (error.response?.status === 401) {
+        alert("로그인이 필요한 기능입니다.");
+        navigate("/login");
+      } else if (error.response?.status === 409) {
+        // 이미 좋아요를 누른 경우
+        alert("이미 좋아요를 누른 뉴스입니다.");
+        setIsLiked(true);
+      } else if (error.response?.status === 404 && isLiked) {
+        // 좋아요를 누르지 않은 뉴스를 취소하려는 경우
+        alert("좋아요를 누르지 않은 뉴스입니다.");
+        setIsLiked(false);
+      } else {
+        alert("좋아요 처리 중 오류가 발생했습니다.");
+      }
+    }
+  };
 
   // 로딩 / 예외 처리
   if (loading) {
@@ -128,7 +189,7 @@ export default function NewsDetailPage() {
         {/* 좋아요 & 공유 */}
         <div className="flex items-center justify-center gap-4 py-8 mt-8 border-t border-b border-gray-100">
           <button
-              onClick={() => setIsLiked(prev => !prev)}
+              onClick={handleLikeToggle}
               className={`flex items-center gap-2 px-6 py-2 rounded-full border-2 transition-all ${
                   isLiked
                       ? "border-red-500 bg-red-50"
@@ -137,7 +198,7 @@ export default function NewsDetailPage() {
           >
             <span>{isLiked ? "❤️" : "🤍"}</span>
             <span className="font-medium text-gray-700">
-              좋아요 {news.heartCount + (isLiked ? 1 : 0)}
+              좋아요 {heartCount}
             </span>
           </button>
 

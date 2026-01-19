@@ -1,5 +1,6 @@
 package com.bugmaker.apt.contoller.news;
 
+import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsDetailResponse;
 import com.bugmaker.apt.domain.news.NewsResponse;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -142,36 +144,100 @@ public class NewsController {
     }
 
     /**
-     * 좋아요 증가
+     * 좋아요 여부 확인
+     * JWT 인증 필요
+     * 
+     * GET /api/news/{id}/heart/me
+     * 
+     * @param id 뉴스 ID
+     * @param member 현재 로그인한 회원 정보
+     * @return 좋아요 여부 (true/false)
+     */
+    @Operation(
+            summary = "좋아요 여부 확인",
+            description = "현재 사용자가 해당 뉴스에 좋아요를 눌렀는지 확인합니다. JWT 인증이 필요합니다.",
+            security = @SecurityRequirement(name = "JWT")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/{id}/heart/me")
+    public ResponseEntity<Boolean> checkLikedByMe(
+            @Parameter(description = "뉴스 ID") @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal Member member
+    ) {
+        // 로그인하지 않은 경우 (member가 null인 경우)
+        if (member == null) {
+            return ResponseEntity.ok(false);
+        }
+
+        log.info("좋아요 여부 확인 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
+        
+        boolean isLiked = newsService.isLikedByMe(member.getId(), id);
+        return ResponseEntity.ok(isLiked);
+    }
+
+    /**
+     * 좋아요 증가 (Heart Count 증가)
+     * JWT 인증 필요
      * 
      * POST /api/news/{id}/heart
      * 
      * @param id 뉴스 ID
+     * @param member 현재 로그인한 회원 정보
      * @return 성공 메시지
      */
-    @Operation(summary = "좋아요 증가", description = "뉴스 좋아요를 1 증가시킵니다.")
+    @Operation(
+            summary = "좋아요 증가", 
+            description = "뉴스에 좋아요를 추가합니다. JWT 인증이 필요합니다.",
+            security = @SecurityRequirement(name = "JWT")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "좋아요 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "뉴스를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 좋아요를 누른 뉴스")
+    })
     @PostMapping("/{id}/heart")
-    public ResponseEntity<Void> increaseHeartCount(@PathVariable Long id) {
-        log.info("좋아요 증가 - 뉴스 ID: {}", id);
-
-        newsService.increaseHeartCount(id);
+    public ResponseEntity<Void> increaseHeartCount(
+            @Parameter(description = "뉴스 ID") @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal Member member
+    ) {
+        log.info("좋아요 증가 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
+        
+        newsService.increaseHeartCount(member.getId(), id);
         return ResponseEntity.ok().build();
     }
 
     /**
-     * 좋아요 취소
+     * 좋아요 취소 (Heart Count 감소)
+     * JWT 인증 필요
      * 
      * DELETE /api/news/{id}/heart
      * 
      * @param id 뉴스 ID
+     * @param member 현재 로그인한 회원 정보
      * @return 성공 메시지
      */
-    @Operation(summary = "좋아요 취소", description = "뉴스 좋아요를 1 감소시킵니다.")
+    @Operation(
+            summary = "좋아요 취소", 
+            description = "뉴스의 좋아요를 취소합니다. JWT 인증이 필요합니다.",
+            security = @SecurityRequirement(name = "JWT")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "좋아요 취소 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "뉴스를 찾을 수 없음 또는 좋아요를 누르지 않은 뉴스")
+    })
     @DeleteMapping("/{id}/heart")
-    public ResponseEntity<Void> decreaseHeartCount(@PathVariable Long id) {
-        log.info("좋아요 취소 - 뉴스 ID: {}", id);
-
-        newsService.decreaseHeartCount(id);
+    public ResponseEntity<Void> decreaseHeartCount(
+            @Parameter(description = "뉴스 ID") @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal Member member
+    ) {
+        log.info("좋아요 취소 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
+        
+        newsService.decreaseHeartCount(member.getId(), id);
         return ResponseEntity.ok().build();
     }
 

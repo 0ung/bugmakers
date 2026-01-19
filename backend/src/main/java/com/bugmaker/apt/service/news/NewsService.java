@@ -1,9 +1,13 @@
 package com.bugmaker.apt.service.news;
 
+import com.bugmaker.apt.common.exception.custom.CustomException;
+import com.bugmaker.apt.common.exception.errorcode.ErrorCode;
+import com.bugmaker.apt.domain.common.Liked;
 import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsDetailResponse;
 import com.bugmaker.apt.domain.news.NewsResponse;
+import com.bugmaker.apt.repository.LikedRepository;
 import com.bugmaker.apt.repository.NewsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +29,7 @@ import java.util.Optional;
 public class NewsService {
 
     private final NewsRepository newsRepository;
+    private final LikedRepository likedRepository;
 
     /**
      * 뉴스 등록 (Python 크롤러용)
@@ -112,13 +117,13 @@ public class NewsService {
      * 
      * @param newsId 뉴스 ID
      * @return 뉴스 상세 정보
-     * @throws IllegalArgumentException 뉴스를 찾을 수 없는 경우
+     * @throws CustomException 뉴스를 찾을 수 없는 경우
      */
     public NewsDetailResponse getNewsDetail(Long newsId) {
         log.info("뉴스 상세 조회 - ID: {}", newsId);
 
         News news = newsRepository.findById(newsId)
-                .orElseThrow(() -> new IllegalArgumentException("뉴스를 찾을 수 없습니다. ID: " + newsId));
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
         return NewsDetailResponse.from(news);
     }
@@ -133,40 +138,67 @@ public class NewsService {
         log.info("조회수 증가 - 뉴스 ID: {}", newsId);
 
         News news = newsRepository.findById(newsId)
-                .orElseThrow(() -> new IllegalArgumentException("뉴스를 찾을 수 없습니다. ID: " + newsId));
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
         news.increaseViewCount();
         // JPA 더티 체킹으로 자동 업데이트
     }
 
     /**
-     * 좋아요 증가
+     * 좋아요 증가 (Heart Count 증가)
      * 
+     * @param memberId 회원 ID
      * @param newsId 뉴스 ID
+     * @throws CustomException 이미 좋아요를 누른 경우 또는 뉴스를 찾을 수 없는 경우
      */
     @Transactional
-    public void increaseHeartCount(Long newsId) {
-        log.info("좋아요 증가 - 뉴스 ID: {}", newsId);
+    public void increaseHeartCount(Long memberId, Long newsId) {
+        // 중복 체크
+        if (likedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+            throw new CustomException(ErrorCode.ALREADY_LIKED);
+        }
 
         News news = newsRepository.findById(newsId)
-                .orElseThrow(() -> new IllegalArgumentException("뉴스를 찾을 수 없습니다. ID: " + newsId));
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
+        likedRepository.save(Liked.forNews(memberId, newsId));
         news.increaseHeartCount();
+        
+        log.info("✅ 좋아요 추가 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
     }
 
     /**
-     * 좋아요 취소
+     * 좋아요 취소 (Heart Count 감소)
      * 
+     * @param memberId 회원 ID
      * @param newsId 뉴스 ID
+     * @throws CustomException 좋아요를 누르지 않은 경우 또는 뉴스를 찾을 수 없는 경우
      */
     @Transactional
-    public void decreaseHeartCount(Long newsId) {
-        log.info("좋아요 취소 - 뉴스 ID: {}", newsId);
+    public void decreaseHeartCount(Long memberId, Long newsId) {
+        // 좋아요 여부 체크
+        if (!likedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+            throw new CustomException(ErrorCode.NOT_LIKED_YET);
+        }
 
         News news = newsRepository.findById(newsId)
-                .orElseThrow(() -> new IllegalArgumentException("뉴스를 찾을 수 없습니다. ID: " + newsId));
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
+        likedRepository.deleteByMemberIdAndNewsId(memberId, newsId);
         news.decreaseHeartCount();
+        
+        log.info("✅ 좋아요 취소 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
+    }
+
+    /**
+     * 좋아요 여부 확인
+     * 
+     * @param memberId 회원 ID
+     * @param newsId 뉴스 ID
+     * @return 좋아요 여부
+     */
+    public boolean isLikedByMe(Long memberId, Long newsId) {
+        return likedRepository.existsByMemberIdAndNewsId(memberId, newsId);
     }
 
     /**
@@ -179,7 +211,7 @@ public class NewsService {
         log.info("신고 증가 - 뉴스 ID: {}", newsId);
 
         News news = newsRepository.findById(newsId)
-                .orElseThrow(() -> new IllegalArgumentException("뉴스를 찾을 수 없습니다. ID: " + newsId));
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
         news.increaseReportCount();
     }
