@@ -28,8 +28,9 @@ message NewsResponse {
 
 // 카테고리 정보
 message CategoryInfo {
-  string display_name = 1;       // 화면 표시명 ("부동산", "정책" 등)
-  repeated string keywords = 2;  // 키워드 목록
+  string code = 1;              // REAL_ESTATE
+  string display_name = 2;      // 화면 표시명 ("부동산", "정책" 등)
+  repeated string keywords = 3; // 키워드 목록
 }
 
 // 카테고리 목록 응답

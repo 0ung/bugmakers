@@ -96,7 +96,7 @@ public class NewsGrpcService extends NewsServiceGrpc.NewsServiceImplBase {
             for (NewsCategory category : NewsCategory.values()) {
                 NewsProto.CategoryInfo categoryInfo = NewsProto.CategoryInfo.newBuilder()
                         .setDisplayName(category.getDisplayName())
-                        .addAllKeywords(category.getKeywords())
+                        .addAllKeywords(category.getKeywordList())  // 가중치 제외, 키워드만 전달
                         .build();
 
                 responseBuilder.addCategories(categoryInfo);
