@@ -62,8 +62,10 @@ class NewsCrawler:
         # 설정 로드
         self.config = self.load_config(config_path)
         self.rss_sources = self.config.get('rss_sources', [])
-        self.keywords = self.config.get('keywords', {})
         self.request_delay = self.config.get('crawler', {}).get('request_delay', 1)
+        
+        # 키워드는 backend에서 동적으로 가져옴
+        self.keywords = {}  # {displayName: [keywords]}
 
         # Backend URL
         base_url = os.getenv('BASE_URL', 'http://localhost:9090')
@@ -83,9 +85,13 @@ class NewsCrawler:
 
         # gRPC 클라이언트 초기화
         self._init_grpc_client()
+        
+        # Backend에서 카테고리 정보 가져오기
+        self._load_categories_from_backend()
 
         logger.info(f"크롤러 초기화 완료 - Backend: {self.backend_url}")
         logger.info(f"활성 RSS 출처: {len([s for s in self.rss_sources if s.get('enabled', True)])}개")
+        logger.info(f"카테고리: {len(self.keywords)}개")
 
     def _load_env(self):
         """환경 변수 로드"""
@@ -115,6 +121,32 @@ class NewsCrawler:
 
         logger.info(f"🚀 gRPC 클라이언트 초기화 완료")
         logger.info(f"gRPC 서버: {grpc_address}")
+
+    def _load_categories_from_backend(self):
+        """백엔드에서 카테고리 정보 가져오기"""
+        try:
+            logger.info("📋 Backend에서 카테고리 정보 가져오는 중...")
+            
+            # gRPC 호출
+            request = news_pb2.Empty()
+            response = self.grpc_stub.GetCategories(request, timeout=10.0)
+            
+            # 카테고리 정보를 dict로 변환
+            for category_info in response.categories:
+                display_name = category_info.display_name
+                keywords = list(category_info.keywords)
+                self.keywords[display_name] = keywords
+                logger.debug(f"  - {display_name}: {len(keywords)}개 키워드")
+            
+            logger.info(f"✅ 카테고리 로드 성공 - {len(self.keywords)}개")
+            
+        except grpc.RpcError as e:
+            logger.error(f"❌ [gRPC] 카테고리 로드 실패: {e.details()}")
+            logger.warning("⚠️  기본 카테고리를 사용합니다 (빈 dict)")
+            self.keywords = {}
+        except Exception as e:
+            logger.error(f"❌ 카테고리 로드 오류: {e}")
+            self.keywords = {}
 
     def load_config(self, config_path: str) -> dict:
         """YAML 설정 파일 로드"""
@@ -175,15 +207,19 @@ class NewsCrawler:
                 if category:
                     # 말머리 추가
                     title_with_prefix = self.add_prefix(title, category)
+                    logger.debug(f"✅ 카테고리 분류: [{category}] {title[:30]}...")
 
                     news_list.append({
                         'title': title_with_prefix,
-                        'content': content[:500],  # 500자 제한
+                        'content': content[:500],
                         'reference': link,
-                        'category': category
+                        'category': category  # displayName 전달
                     })
+                else:
+                    # 카테고리를 찾지 못한 경우 스킵 (수집하지 않음)
+                    logger.debug(f"⏭️  카테고리 미분류 (스킵): {title[:50]}...")
 
-            logger.info(f"✅ 수집 완료: {len(news_list)}개")
+            logger.info(f"✅ 수집 완료: {len(news_list)}개 (카테고리 매칭됨)")
 
         except Exception as e:
             logger.error(f"❌ RSS 피드 가져오기 실패 [{source['name']}]: {e}")
@@ -196,11 +232,12 @@ class NewsCrawler:
             # 메타데이터 (API Key)
             metadata = (('x-api-key', self.api_key),)
 
-            # 요청 생성
+            # 요청 생성 (category 포함)
             request = news_pb2.NewsCreateRequest(
                 title=news['title'],
                 content=news['content'],
-                reference=news['reference']
+                reference=news['reference'],
+                category=news.get('category', '')
             )
 
             # gRPC 호출

@@ -10,6 +10,7 @@ message NewsCreateRequest {
   string title = 1;
   string content = 2;
   string reference = 3;
+  string category = 4;
 }
 
 // 뉴스 응답
@@ -17,12 +18,30 @@ message NewsResponse {
   int64 id = 1;
   string title = 2;
   string reference = 3;
-  int64 view_count = 4;
-  int64 heart_count = 5;
-  string created_date = 6;
+  string category = 4;
+  int64 view_count = 5;
+  int64 heart_count = 6;
+  int64 share_count = 7;
+  int64 report_count = 8;
+  string created_date = 9;
 }
+
+// 카테고리 정보
+message CategoryInfo {
+  string display_name = 1;       // 화면 표시명 ("부동산", "정책" 등)
+  repeated string keywords = 2;  // 키워드 목록
+}
+
+// 카테고리 목록 응답
+message GetCategoriesResponse {
+  repeated CategoryInfo categories = 1;
+}
+
+// 빈 요청
+message Empty {}
 
 // 뉴스 서비스
 service NewsService {
   rpc CreateNews(NewsCreateRequest) returns (NewsResponse);
+  rpc GetCategories(Empty) returns (GetCategoriesResponse);  // 카테고리 정보 조회
 }

@@ -1,6 +1,7 @@
 package com.bugmaker.apt.repository;
 
 import com.bugmaker.apt.domain.news.News;
+import com.bugmaker.apt.enums.NewsCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,46 +31,35 @@ public interface NewsRepository extends JpaRepository<News, Long> {
      */
     Optional<News> findByTitle(String title);
     
-    /**
-     * 제목 존재 여부 확인 (중복 체크)
-     */
+    /** 제목 존재 여부 확인 (중복 체크) */
     boolean existsByTitle(String title);
     
-    /**
-     * 출처(URL)로 뉴스 검색 (중복 체크용)
-     */
+    /** 출처(URL)로 뉴스 검색 (중복 체크용) */
     Optional<News> findByReference(String reference);
     
-    /**
-     * 출처 존재 여부 확인
-     */
+    /** 출처 존재 여부 확인 */
     boolean existsByReference(String reference);
 
-    /**
-     * 카테고리별 뉴스 조회 (페이징)
-     */
-    Page<News> findByCategory(String category, Pageable pageable);
+    /** 카테고리별 뉴스 조회 */
+    Page<News> findByCategory(NewsCategory category, Pageable pageable);
 
-    /**
-     * 카테고리 + 검색어로 뉴스 조회 (페이징)
-     */
+    /** 카테고리 + 검색어로 뉴스 조회 */
     @Query("SELECT n FROM News n " +
             "WHERE n.category = :category " +
             "AND LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    Page<News> findByCategoryAndKeyword(@Param("category") String category,
+    Page<News> findByCategoryAndKeyword(@Param("category") NewsCategory category,
                                         @Param("keyword") String keyword,
                                         Pageable pageable);
 
-    /**
-     * 검색어로 뉴스 조회 (카테고리 필터 없음)
-     */
+    /** 검색어로 뉴스 조회 */
     @Query("SELECT n FROM News n " +
             "WHERE LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<News> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     /**
-     * 모든 카테고리 목록 조회 (중복 제거)
+     * DB에 실제로 저장된 뉴스의 카테고리 목록 조회 (중복 제거)
+     * NewsCategory Enum 반환
      */
     @Query("SELECT DISTINCT n.category FROM News n WHERE n.category IS NOT NULL ORDER BY n.category")
-    List<String> findAllCategories();
+    List<NewsCategory> findDistinctCategories();
 }

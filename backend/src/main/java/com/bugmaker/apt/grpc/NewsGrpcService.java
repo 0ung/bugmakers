@@ -2,6 +2,7 @@ package com.bugmaker.apt.grpc;
 
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsResponse;
+import com.bugmaker.apt.enums.NewsCategory;
 import com.bugmaker.apt.grpc.proto.NewsProto;
 import com.bugmaker.apt.grpc.proto.NewsServiceGrpc;
 import com.bugmaker.apt.service.news.NewsService;
@@ -38,7 +39,8 @@ public class NewsGrpcService extends NewsServiceGrpc.NewsServiceImplBase {
             NewsCreateRequest domainRequest = new NewsCreateRequest(
                     request.getTitle(),
                     request.getContent(),
-                    request.getReference()
+                    request.getReference(),
+                    request.getCategory()
             );
 
             // 서비스 호출
@@ -49,8 +51,11 @@ public class NewsGrpcService extends NewsServiceGrpc.NewsServiceImplBase {
                     .setId(domainResponse.id())
                     .setTitle(domainResponse.title())
                     .setReference(domainResponse.reference())
+                    .setCategory(domainResponse.category())
                     .setViewCount(domainResponse.viewCount())
                     .setHeartCount(domainResponse.heartCount())
+                    .setShareCount(domainResponse.shareCount())
+                    .setReportCount(0L)  // 크롤러 등록 시에는 reportCount = 0
                     .setCreatedDate(domainResponse.createdDate().toString())
                     .build();
 
@@ -71,6 +76,44 @@ public class NewsGrpcService extends NewsServiceGrpc.NewsServiceImplBase {
             responseObserver.onError(
                     Status.INTERNAL
                             .withDescription("뉴스 등록 중 오류 발생")
+                            .asRuntimeException()
+            );
+        }
+    }
+
+    @Override
+    public void getCategories(
+            NewsProto.Empty request,
+            StreamObserver<NewsProto.GetCategoriesResponse> responseObserver) {
+
+        try {
+            log.info("[gRPC] 카테고리 목록 조회 요청");
+
+            // NewsCategory Enum에서 모든 카테고리 정보 추출
+            NewsProto.GetCategoriesResponse.Builder responseBuilder =
+                    NewsProto.GetCategoriesResponse.newBuilder();
+
+            for (NewsCategory category : NewsCategory.values()) {
+                NewsProto.CategoryInfo categoryInfo = NewsProto.CategoryInfo.newBuilder()
+                        .setDisplayName(category.getDisplayName())
+                        .addAllKeywords(category.getKeywords())
+                        .build();
+
+                responseBuilder.addCategories(categoryInfo);
+            }
+
+            NewsProto.GetCategoriesResponse response = responseBuilder.build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            log.info("[gRPC] 카테고리 목록 조회 성공 - {} 개", NewsCategory.values().length);
+
+        } catch (Exception e) {
+            log.error("[gRPC] 카테고리 목록 조회 실패", e);
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("카테고리 조회 중 오류 발생")
                             .asRuntimeException()
             );
         }

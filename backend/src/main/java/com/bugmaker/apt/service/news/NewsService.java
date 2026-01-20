@@ -8,6 +8,7 @@ import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsDetailResponse;
 import com.bugmaker.apt.domain.news.NewsResponse;
+import com.bugmaker.apt.enums.NewsCategory;
 import com.bugmaker.apt.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,15 +115,16 @@ public class NewsService {
         return newsPage.map(NewsResponse::from);
     }
 
-    /**
-     * 카테고리 + 검색어로 뉴스 조회 (페이징)
-     */
-    public Page<NewsResponse> searchNews(String category, String keyword, Pageable pageable) {
-        log.info("뉴스 검색 - 카테고리: {}, 검색어: {}, 페이지: {}", category, keyword, pageable.getPageNumber());
+    /** 카테고리 + 검색어로 뉴스 조회 (페이징) */
+    public Page<NewsResponse> searchNews(String categoryName, String keyword, Pageable pageable) {
+        log.info("뉴스 검색 - 카테고리: {}, 검색어: {}, 페이지: {}", categoryName, keyword, pageable.getPageNumber());
 
         Page<News> newsPage;
 
-        boolean hasCategory = category != null && !category.trim().isEmpty();
+        // displayName을 Enum으로 변환
+        NewsCategory category = categoryName != null ? NewsCategory.fromDisplayName(categoryName) : null;
+
+        boolean hasCategory = category != null && category != NewsCategory.GENERAL;
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
 
         if (!hasKeyword && !hasCategory) {
@@ -143,11 +145,19 @@ public class NewsService {
         return newsPage.map(NewsResponse::from);
     }
 
-    /**
-     * 모든 카테고리 목록 조회
-     */
+    /** 모든 카테고리 목록 조회 (Enum 기반) */
     public List<String> getAllCategories() {
-        return newsRepository.findAllCategories();
+        // NewsCategory Enum의 모든 displayName 반환
+        return NewsCategory.getAllDisplayNames();
+    }
+
+    /** DB에 실제로 뉴스가 있는 카테고리 목록 조회 */
+    public List<String> getExistingCategories() {
+        // DB에서 실제로 사용 중인 카테고리만 조회
+        List<NewsCategory> categories = newsRepository.findDistinctCategories();
+        return categories.stream()
+                .map(NewsCategory::getDisplayName)
+                .toList();
     }
 
     /**

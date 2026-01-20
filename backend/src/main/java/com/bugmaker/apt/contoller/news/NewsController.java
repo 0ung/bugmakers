@@ -24,6 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 뉴스 컨트롤러
  * RSS 크롤링 데이터 관리 및 뉴스 조회 API
@@ -401,14 +403,25 @@ public class NewsController {
     }
 
     /**
-     * 카테고리 목록 조회
+     * 카테고리 목록 조회 (NewsCategory Enum 전체)
+     * DB에 뉴스가 없어도 모든 카테고리 표시
      */
-    @Operation(summary = "카테고리 목록 조회", description = "뉴스 카테고리 목록을 조회합니다.")
+    @Operation(summary = "카테고리 목록 조회", description = "뉴스 카테고리 목록을 조회합니다. (NewsCategory Enum 전체)")
     @GetMapping("/categories")
-    public ResponseEntity<java.util.List<String>> getNewsCategories() {
+    public ResponseEntity<List<String>> getNewsCategories() {
         log.info("뉴스 카테고리 목록 조회");
 
-        java.util.List<String> categories = newsService.getAllCategories();
+        List<String> categories = newsService.getAllCategories();
+        return ResponseEntity.ok(categories);
+    }
+
+    /** 용 중인 카테고리 조회 (DB에 실제로 뉴스가 있는 카테고리만) */
+    @Operation(summary = "사용 중인 카테고리 조회", description = "DB에 실제로 뉴스가 저장된 카테고리만 조회합니다.")
+    @GetMapping("/categories/existing")
+    public ResponseEntity<List<String>> getExistingNewsCategories() {
+        log.info("사용 중인 카테고리 조회");
+
+        List<String> categories = newsService.getExistingCategories();
         return ResponseEntity.ok(categories);
     }
 }

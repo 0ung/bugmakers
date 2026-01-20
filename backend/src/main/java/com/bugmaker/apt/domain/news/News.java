@@ -1,5 +1,6 @@
 package com.bugmaker.apt.domain.news;
 
+import com.bugmaker.apt.enums.NewsCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -35,8 +36,9 @@ public class News {
     @Comment("본문")
     private String content;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private String category;
+    private NewsCategory category;
 
     @Column(nullable = false, length = 500)
     @Comment("출처")
@@ -72,6 +74,19 @@ public class News {
     private LocalDateTime lastModifiedDate;
 
     // 비즈니스 메서드
+    public static News createNews(String title, String content, String reference, NewsCategory category) {
+        return News.builder()
+                .title(title)
+                .content(content)
+                .reference(reference)
+                .category(category != null ? category : NewsCategory.GENERAL)
+                .viewCount(0L)
+                .heartCount(0L)
+                .shareCount(0L)
+                .reportCount(0L)
+                .build();
+    }
+
     public void increaseViewCount() {
         this.viewCount++;
     }

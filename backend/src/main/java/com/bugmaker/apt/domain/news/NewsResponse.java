@@ -1,5 +1,7 @@
 package com.bugmaker.apt.domain.news;
 
+import com.bugmaker.apt.enums.NewsCategory;
+
 import java.time.LocalDateTime;
 
 /**
@@ -11,6 +13,7 @@ public record NewsResponse(
         Long id,
         String title,
         String reference,
+        String category,  // displayName 반환
         Long viewCount,
         Long heartCount,
         Long shareCount,
@@ -24,6 +27,7 @@ public record NewsResponse(
                 news.getId(),
                 news.getTitle(),
                 news.getReference(),
+                news.getCategory() != null ? news.getCategory().getDisplayName() : NewsCategory.GENERAL.getDisplayName(),
                 news.getViewCount(),
                 news.getHeartCount(),
                 news.getShareCount(),
