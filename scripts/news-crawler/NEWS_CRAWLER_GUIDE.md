@@ -31,12 +31,15 @@ RSS 기반 부동산 뉴스 자동 수집 시스템 (gRPC)
 # 1. Backend 디렉토리로 이동
 
 # 2. 컨테이너 중지
-docker-compose down
+docker-compose down (또는 docker-compose build --no-cache)
 
 # 3. Docker 시스템 정리 (선택)
 docker system prune -f
 
-# 4. 재시작
+# 번외. Crawler 재빌드 (소스 변경 반영시)
+docker-compose build news-crawler
+
+# 4. 환경변수 넣어 재시작
 docker-compose --env-file .env.local up -d
 
 # 5. Docker 컨테이너 상태 확인
@@ -45,7 +48,10 @@ docker ps
 # 6. 환경변수 확인
 docker exec bugmaker-news-crawler env | findstr BASE_URL
 
-# 7. Docker volume 확인
+# 7. import 확인 (requirements.txt)
+ docker exec bugmaker-news-crawler pip list
+
+# 8. Docker volume 확인
 docker volume ls
 ```
 ---

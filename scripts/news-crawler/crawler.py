@@ -123,11 +123,11 @@ class NewsCrawler:
         logger.info(f"gRPC 서버: {grpc_address}")
 
     def _load_categories_from_backend(self):
-        """백엔드에서 카테고리 정보 가져오기"""
+        """백엔드에서 카테고리 정보 가져오기 (공개 API)"""
         try:
             logger.info("📋 Backend에서 카테고리 정보 가져오는 중...")
             
-            # gRPC 호출
+            # gRPC 호출 (API Key 불필요 - 공개 API)
             request = news_pb2.Empty()
             response = self.grpc_stub.GetCategories(request, timeout=10.0)
             
@@ -172,13 +172,15 @@ class NewsCrawler:
         return None
 
     def add_prefix(self, title: str, category: str) -> str:
-        """말머리 추가"""
+        """말머리 추가 (기존 말머리 제거 후)"""
+        import re
+        
+        # 1. 기존 말머리 패턴 제거 ([한글/영문] 형식)
+        # 예: [표], [속보], [Today], [부동산] 등
+        title = re.sub(r'^\[[^\]]+\]\s*', '', title)
+        
+        # 2. 새 말머리 추가
         prefix = f"[{category}] "
-
-        # 이미 말머리가 있는지 확인
-        if title.startswith('[') and ']' in title:
-            return title
-
         return prefix + title
 
     def fetch_rss_feed(self, source: dict) -> List[Dict]:
@@ -193,13 +195,56 @@ class NewsCrawler:
                 logger.warning(f"⚠️  RSS 피드가 비어있습니다: {source['name']}")
                 return news_list
 
+            # ✨ 디버그: 첫 번째 entry 구조 출력
+            if feed.entries and logger.level <= logging.DEBUG:
+                first_entry = feed.entries[0]
+                logger.debug("=" * 60)
+                logger.debug("📄 RSS Entry 구조 (1개 예시):")
+                logger.debug(f"  title: {first_entry.get('title', 'N/A')[:50]}...")
+                logger.debug(f"  link: {first_entry.get('link', 'N/A')[:50]}...")
+                
+                # description
+                desc = first_entry.get('description', '')
+                logger.debug(f"  description 길이: {len(desc)}자")
+                logger.debug(f"  description 미리보기: {desc[:100]}...")
+                
+                # summary
+                summ = first_entry.get('summary', '')
+                logger.debug(f"  summary 길이: {len(summ)}자")
+                
+                # content
+                content_list = first_entry.get('content', [])
+                if content_list:
+                    content_value = content_list[0].get('value', '')
+                    content_type = content_list[0].get('type', 'N/A')
+                    logger.debug(f"  content type: {content_type}")
+                    logger.debug(f"  content 길이: {len(content_value)}자")
+                    logger.debug(f"  content 미리보기: {content_value[:200]}...")
+                    
+                    # HTML 태그 포함 여부 확인
+                    has_html = '<' in content_value and '>' in content_value
+                    logger.debug(f"  HTML 태그 포함: {'YES ✅' if has_html else 'NO ❌'}")
+                else:
+                    logger.debug("  content: 없음")
+                
+                logger.debug("=" * 60)
+
             for entry in feed.entries:
                 title = entry.get('title', '')
-                content = entry.get('summary', entry.get('description', ''))
                 link = entry.get('link', '')
 
                 if not title or not link:
                     continue
+
+                # RSS에서 content 가져오기 (SBS 같은 양질 RSS는 전체 본문 제공)
+                # content:encoded (전체 HTML) > summary > description 순
+                content = (
+                        entry.get('content', [{}])[0].get('value', '') or
+                        entry.get('summary', '') or
+                        entry.get('description', '')
+                )
+                
+                logger.debug(f"✅ RSS content 사용 ({len(content)}자)")
 
                 # 카테고리 분류
                 category = self.classify_category(title, content)
@@ -211,12 +256,12 @@ class NewsCrawler:
 
                     news_list.append({
                         'title': title_with_prefix,
-                        'content': content[:500],
+                        'content': content,
                         'reference': link,
-                        'category': category  # displayName 전달
+                        'category': category
                     })
                 else:
-                    # 카테고리를 찾지 못한 경우 스킵 (수집하지 않음)
+                    # 카테고리를 찾지 못한 경우 스킵
                     logger.debug(f"⏭️  카테고리 미분류 (스킵): {title[:50]}...")
 
             logger.info(f"✅ 수집 완료: {len(news_list)}개 (카테고리 매칭됨)")
@@ -290,9 +335,6 @@ class NewsCrawler:
             for news in news_list:
                 if self.send_to_backend(news):
                     total_saved += 1
-
-                # 요청 간격
-                time.sleep(self.request_delay)
 
         logger.info("=" * 60)
         logger.info(f"크롤링 완료 - 수집: {total_collected}개, 저장: {total_saved}개")
