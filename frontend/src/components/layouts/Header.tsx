@@ -29,7 +29,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 bg-white shadow z-10">
+    <header className="sticky top-0 bg-white shadow z-50">
       <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col items-center text-center relative">
         {/* 로고 */}
         <Link to="/" className="block mb-1">
