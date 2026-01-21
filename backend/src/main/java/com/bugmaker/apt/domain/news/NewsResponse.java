@@ -13,7 +13,8 @@ public record NewsResponse(
         Long id,
         String title,
         String reference,
-        String category,  // displayName 반환
+        String category,
+        String thumbnailUrl,
         Long viewCount,
         Long heartCount,
         Long shareCount,
@@ -28,6 +29,7 @@ public record NewsResponse(
                 news.getTitle(),
                 news.getReference(),
                 news.getCategory() != null ? news.getCategory().getDisplayName() : NewsCategory.GENERAL.getDisplayName(),
+                news.getThumbnailUrl(),
                 news.getViewCount(),
                 news.getHeartCount(),
                 news.getShareCount(),

@@ -22,11 +22,15 @@ public record NewsCreateRequest(
         @Size(max = 500, message = "출처는 500자를 초과할 수 없습니다")
         String reference,
 
-        String category  // displayName (예: "부동산")
+        String category,
+        
+        String thumbnailUrl,
+        
+        String detailImageUrl
 ) {
     /** DTO → Entity 변환 */
     public News toEntity() {
         NewsCategory newsCategory = NewsCategory.fromDisplayName(category);
-        return News.createNews(title, content, reference, newsCategory);
+        return News.createNews(title, content, reference, newsCategory, thumbnailUrl, detailImageUrl);
     }
 }

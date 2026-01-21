@@ -234,7 +234,7 @@ export default function NewsDetailPage() {
             />
           </svg>
           <img
-            src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1000&q=80"
+            src={news.detailImageUrl || "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1000&q=80"}
             alt={news.title}
             className="rounded-2xl shadow w-full object-cover h-72"
           />

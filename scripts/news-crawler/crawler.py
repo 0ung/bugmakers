@@ -10,6 +10,8 @@ import time
 import logging
 import feedparser
 import yaml
+import json
+import re
 from pathlib import Path
 from typing import Dict, List
 from datetime import datetime
@@ -63,9 +65,6 @@ class NewsCrawler:
         self.config = self.load_config(config_path)
         self.rss_sources = self.config.get('rss_sources', [])
         self.request_delay = self.config.get('crawler', {}).get('request_delay', 1)
-        
-        # 키워드는 backend에서 동적으로 가져옴
-        self.keywords = {}  # {displayName: [keywords]}
 
         # Backend URL
         base_url = os.getenv('BASE_URL', 'http://localhost:9090')
@@ -85,13 +84,9 @@ class NewsCrawler:
 
         # gRPC 클라이언트 초기화
         self._init_grpc_client()
-        
-        # Backend에서 카테고리 정보 가져오기
-        self._load_categories_from_backend()
 
         logger.info(f"크롤러 초기화 완료 - Backend: {self.backend_url}")
         logger.info(f"활성 RSS 출처: {len([s for s in self.rss_sources if s.get('enabled', True)])}개")
-        logger.info(f"카테고리: {len(self.keywords)}개")
 
     def _load_env(self):
         """환경 변수 로드"""
@@ -122,32 +117,6 @@ class NewsCrawler:
         logger.info(f"🚀 gRPC 클라이언트 초기화 완료")
         logger.info(f"gRPC 서버: {grpc_address}")
 
-    def _load_categories_from_backend(self):
-        """백엔드에서 카테고리 정보 가져오기 (공개 API)"""
-        try:
-            logger.info("📋 Backend에서 카테고리 정보 가져오는 중...")
-            
-            # gRPC 호출 (API Key 불필요 - 공개 API)
-            request = news_pb2.Empty()
-            response = self.grpc_stub.GetCategories(request, timeout=10.0)
-            
-            # 카테고리 정보를 dict로 변환
-            for category_info in response.categories:
-                display_name = category_info.display_name
-                keywords = list(category_info.keywords)
-                self.keywords[display_name] = keywords
-                logger.debug(f"  - {display_name}: {len(keywords)}개 키워드")
-            
-            logger.info(f"✅ 카테고리 로드 성공 - {len(self.keywords)}개")
-            
-        except grpc.RpcError as e:
-            logger.error(f"❌ [gRPC] 카테고리 로드 실패: {e.details()}")
-            logger.warning("⚠️  기본 카테고리를 사용합니다 (빈 dict)")
-            self.keywords = {}
-        except Exception as e:
-            logger.error(f"❌ 카테고리 로드 오류: {e}")
-            self.keywords = {}
-
     def load_config(self, config_path: str) -> dict:
         """YAML 설정 파일 로드"""
         try:
@@ -161,20 +130,47 @@ class NewsCrawler:
             sys.exit(1)
 
     def classify_category(self, title: str, content: str) -> str:
-        """키워드 기반 카테고리 분류"""
-        text = (title + " " + content).lower()
-
-        for category, keyword_list in self.keywords.items():
-            for keyword in keyword_list:
-                if keyword in text:
-                    return category
-
-        return None
+        """
+        Backend API를 호출하여 카테고리 분류 (가중치 기반)
+        
+        Returns:
+            카테고리 displayName (예: "부동산", "정책", "일반")
+            "일반"이 반환되면 부동산 관련 뉴스가 아님
+        """
+        try:
+            # gRPC ClassifyCategory API 호출
+            logger.info(f"🔍 카테고리 분류 요청: {title[:50]}...")
+            
+            # 메타데이터 (API Key) - ClassifyCategory도 인증 필요
+            metadata = (('x-api-key', self.api_key),)
+            
+            request = news_pb2.ClassifyRequest(
+                title=title,
+                content=content[:500]  # 콘텐츠는 첫 500자만 전송
+            )
+            
+            response = self.grpc_stub.ClassifyCategory(
+                request, 
+                metadata=metadata,  # API Key 전달
+                timeout=5.0
+            )
+            category = response.category
+            
+            # INFO 레벨에서도 분류 결과 표시
+            logger.info(f"🎯 분류 결과: [{category}] {title[:50]}...")
+            return category
+            
+        except grpc.RpcError as e:
+            logger.error(f"❌ [gRPC] 카테고리 분류 실패: {e.code()} - {e.details()}")
+            logger.error(f"  ❌ 제목: {title[:50]}...")
+            return "일반"  # 실패 시 "일반"으로 처리 (스킵됨)
+        except Exception as e:
+            logger.error(f"❌ 카테고리 분류 오류: {e}")
+            logger.error(f"  ❌ 제목: {title[:50]}...")
+            return "일반"
 
     def add_prefix(self, title: str, category: str) -> str:
         """말머리 추가 (기존 말머리 제거 후)"""
-        import re
-        
         # 1. 기존 말머리 패턴 제거 ([한글/영문] 형식)
         # 예: [표], [속보], [Today], [부동산] 등
         title = re.sub(r'^\[[^\]]+\]\s*', '', title)
@@ -182,6 +178,62 @@ class NewsCrawler:
         # 2. 새 말머리 추가
         prefix = f"[{category}] "
         return prefix + title
+
+    def extract_images(self, html_content: str) -> tuple:
+        """
+        HTML 콘텐츠에서 이미지 URL 추출 (개선 버전)
+        
+        Args:
+            html_content: HTML 문자열
+            
+        Returns:
+            (thumbnail_url, detail_image_url)
+            - 이미지 0개: (None, None)
+            - 이미지 1개: (img[0], img[0])  # 같은 이미지 사용
+            - 이미지 2+개: (img[0], img[1])
+        """
+        try:
+            # <img> 태그에서 src 추출 (개선된 정규식)
+            img_pattern = r'<img[^>]+src=["\'](https?://[^"\']+)["\']'
+            image_urls = re.findall(img_pattern, html_content, re.IGNORECASE)
+            
+            # 디버깅: 추출된 이미지 URL 모두 출력
+            if image_urls:
+                logger.debug(f"🖼️  추출된 이미지 URL ({len(image_urls)}개):")
+                for idx, url in enumerate(image_urls[:5], 1):  # 처음 5개만
+                    logger.debug(f"  [{idx}] {url[:80]}..." if len(url) > 80 else f"  [{idx}] {url}")
+            
+            # 중복 제거 & 필터링
+            unique_images = []
+            for url in image_urls:
+                # HTML entity 디코딩 (&amp; -> &)
+                url = url.replace('&amp;', '&')
+                
+                # 유효한 이미지 URL만 포함
+                if (url.startswith('http') and 
+                    url not in unique_images and
+                    not url.startswith('data:') and
+                    not any(ext in url.lower() for ext in ['.jsp', '.do', '.php', '.asp', 'tracking', 'redirect'])):
+                    unique_images.append(url)
+            
+            # 이미지 개수에 따른 처리
+            if len(unique_images) == 0:
+                logger.debug("🖼️  이미지 없음 (Frontend 기본 이미지 사용)")
+                return None, None
+                
+            elif len(unique_images) == 1:
+                logger.debug(f"🖼️  이미지 1개 (썸네일=상세): {unique_images[0][:60]}...")
+                return unique_images[0], unique_images[0]
+                
+            else:
+                logger.debug(f"🖼️  이미지 {len(unique_images)}개 (썸네일=1번째, 상세=2번째)")
+                logger.debug(f"  썸네일: {unique_images[0][:60]}...")
+                logger.debug(f"  상세: {unique_images[1][:60]}...")
+                return unique_images[0], unique_images[1]
+            
+        except Exception as e:
+            logger.warning(f"⚠️  이미지 추출 오류: {e}")
+            return None, None
 
     def fetch_rss_feed(self, source: dict) -> List[Dict]:
         """RSS 피드 가져오기"""
@@ -206,22 +258,12 @@ class NewsCrawler:
                 # description
                 desc = first_entry.get('description', '')
                 logger.debug(f"  description 길이: {len(desc)}자")
-                logger.debug(f"  description 미리보기: {desc[:100]}...")
-                
-                # summary
-                summ = first_entry.get('summary', '')
-                logger.debug(f"  summary 길이: {len(summ)}자")
                 
                 # content
                 content_list = first_entry.get('content', [])
                 if content_list:
                     content_value = content_list[0].get('value', '')
-                    content_type = content_list[0].get('type', 'N/A')
-                    logger.debug(f"  content type: {content_type}")
                     logger.debug(f"  content 길이: {len(content_value)}자")
-                    logger.debug(f"  content 미리보기: {content_value[:200]}...")
-                    
-                    # HTML 태그 포함 여부 확인
                     has_html = '<' in content_value and '>' in content_value
                     logger.debug(f"  HTML 태그 포함: {'YES ✅' if has_html else 'NO ❌'}")
                 else:
@@ -236,8 +278,7 @@ class NewsCrawler:
                 if not title or not link:
                     continue
 
-                # RSS에서 content 가져오기 (SBS 같은 양질 RSS는 전체 본문 제공)
-                # content:encoded (전체 HTML) > summary > description 순
+                # RSS에서 content 가져오기
                 content = (
                         entry.get('content', [{}])[0].get('value', '') or
                         entry.get('summary', '') or
@@ -246,25 +287,31 @@ class NewsCrawler:
                 
                 logger.debug(f"✅ RSS content 사용 ({len(content)}자)")
 
-                # 카테고리 분류
+                # 이미지 추출
+                thumbnail_url, detail_image_url = self.extract_images(content)
+
+                # 🎯 Backend API를 통한 카테고리 분류 (가중치 기반)
                 category = self.classify_category(title, content)
 
-                if category:
-                    # 말머리 추가
-                    title_with_prefix = self.add_prefix(title, category)
-                    logger.debug(f"✅ 카테고리 분류: [{category}] {title[:30]}...")
+                # 🚨 "일반" 카테고리는 스킵 (부동산 관련 뉴스가 아님)
+                if category == "일반":
+                    logger.info(f"⏭️  [일반] 부동산 무관 뉴스 스킵: {title[:50]}...")
+                    continue
 
-                    news_list.append({
-                        'title': title_with_prefix,
-                        'content': content,
-                        'reference': link,
-                        'category': category
-                    })
-                else:
-                    # 카테고리를 찾지 못한 경우 스킵
-                    logger.debug(f"⏭️  카테고리 미분류 (스킵): {title[:50]}...")
+                # 말머리 추가
+                title_with_prefix = self.add_prefix(title, category)
+                logger.debug(f"✅ 카테고리 분류: [{category}] {title[:30]}...")
 
-            logger.info(f"✅ 수집 완료: {len(news_list)}개 (카테고리 매칭됨)")
+                news_list.append({
+                    'title': title_with_prefix,
+                    'content': content,
+                    'reference': link,
+                    'category': category,
+                    'thumbnail_url': thumbnail_url,
+                    'detail_image_url': detail_image_url
+                })
+
+            logger.info(f"✅ 수집 완료: {len(news_list)}개 (부동산 관련 뉴스만)")
 
         except Exception as e:
             logger.error(f"❌ RSS 피드 가져오기 실패 [{source['name']}]: {e}")
@@ -277,12 +324,14 @@ class NewsCrawler:
             # 메타데이터 (API Key)
             metadata = (('x-api-key', self.api_key),)
 
-            # 요청 생성 (category 포함)
+            # 요청 생성
             request = news_pb2.NewsCreateRequest(
                 title=news['title'],
                 content=news['content'],
                 reference=news['reference'],
-                category=news.get('category', '')
+                category=news.get('category', ''),
+                thumbnail_url=news.get('thumbnail_url', '') or '',
+                detail_image_url=news.get('detail_image_url', '') or ''
             )
 
             # gRPC 호출
@@ -315,7 +364,7 @@ class NewsCrawler:
     def run(self):
         """크롤링 실행"""
         logger.info("=" * 60)
-        logger.info("뉴스 크롤링 시작")
+        logger.info("🏠 부동산 뉴스 크롤링 시작")
         logger.info("=" * 60)
 
         total_collected = 0
@@ -337,7 +386,7 @@ class NewsCrawler:
                     total_saved += 1
 
         logger.info("=" * 60)
-        logger.info(f"크롤링 완료 - 수집: {total_collected}개, 저장: {total_saved}개")
+        logger.info(f"✅ 크롤링 완료 - 부동산 관련 뉴스: {total_collected}개, 저장: {total_saved}개")
         logger.info("=" * 60)
 
     def __del__(self):

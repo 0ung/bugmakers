@@ -5,8 +5,8 @@ services:
     container_name: bugmaker-postgres
     environment:
       - 'POSTGRES_DB=${LOCAL_DB}'
-      - 'POSTGRES_PASSWORD=${LOCAL_DB_USERNAME}'
-      - 'POSTGRES_USER=${LOCAL_DB_PASSWORD}'
+      - 'POSTGRES_USER=${LOCAL_DB_USERNAME}'
+      - 'POSTGRES_PASSWORD=${LOCAL_DB_PASSWORD}'
     ports:
       - '5432:5432'
     # 볼륨 마운트: 컨테이너 재시작/삭제 시에도 데이터 보존 (docker-compose down)

@@ -106,13 +106,26 @@ export default function NewsPage() {
         const category = categoryMatch ? categoryMatch[1] : "일반";
         const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
 
+        // 썸네일 이미지 처리: DB에 저장된 이미지가 있으면 사용, 없으면 기본 이미지
+        const thumbnailImage = news.thumbnailUrl || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80";
+        
+        // 디버깅용 로그 (첫 번째 뉴스만)
+        if (news.id === response.data.content[0]?.id) {
+          console.log('📸 뉴스 이미지 확인:', {
+            newsId: news.id,
+            title: titleWithoutCategory,
+            thumbnailUrl: news.thumbnailUrl,
+            finalImage: thumbnailImage
+          });
+        }
+
         return {
           id: news.id,
           category: category,
           title: titleWithoutCategory,
           description: "", // API에 description 없음
           date: new Date(news.createdDate).toLocaleDateString('ko-KR'),
-          image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
+          image: thumbnailImage
         };
       });
 

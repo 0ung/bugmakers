@@ -35,12 +35,14 @@ public class NewsGrpcService extends NewsServiceGrpc.NewsServiceImplBase {
         try {
             log.info("[gRPC] 뉴스 등록 요청 - 제목: {}", request.getTitle());
 
-            // Domain 객체로 변환
+            // Domain 객체로 변환 (이미지 포함)
             NewsCreateRequest domainRequest = new NewsCreateRequest(
                     request.getTitle(),
                     request.getContent(),
                     request.getReference(),
-                    request.getCategory()
+                    request.getCategory(),
+                    request.getThumbnailUrl(),
+                    request.getDetailImageUrl()
             );
 
             // 서비스 호출
@@ -113,7 +115,38 @@ public class NewsGrpcService extends NewsServiceGrpc.NewsServiceImplBase {
             log.error("[gRPC] 카테고리 목록 조회 실패", e);
             responseObserver.onError(
                     Status.INTERNAL
-                            .withDescription("카테고리 조회 중 오류 발생")
+                            .withDescription("카테곣리 조회 중 오류 발생")
+                            .asRuntimeException()
+            );
+        }
+    }
+
+    @Override
+    public void classifyCategory(
+            NewsProto.ClassifyRequest request,
+            StreamObserver<NewsProto.ClassifyResponse> responseObserver) {
+
+        try {
+            log.debug("[gRPC] 카테고리 분류 요청 - 제목: {}", request.getTitle());
+
+            // NewsCategory Enum의 classify 메서드 호출 (가중치 기반 분류)
+            NewsCategory category = NewsCategory.classify(request.getTitle(), request.getContent());
+
+            // Proto 응답 생성
+            NewsProto.ClassifyResponse response = NewsProto.ClassifyResponse.newBuilder()
+                    .setCategory(category.getDisplayName())  // "부동산", "정책", "일반" 등
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            log.debug("[gRPC] 카테고리 분류 성공 - 결과: {}", category.getDisplayName());
+
+        } catch (Exception e) {
+            log.error("[gRPC] 카테고리 분류 실패", e);
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("카테고리 분류 중 오류 발생")
                             .asRuntimeException()
             );
         }

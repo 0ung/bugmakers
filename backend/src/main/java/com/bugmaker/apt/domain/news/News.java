@@ -44,6 +44,14 @@ public class News {
     @Comment("출처")
     private String reference;
 
+    @Column(length = 1000)
+    @Comment("썸네일 URL") // 썸네일 이미지 URL (목록용)
+    private String thumbnailUrl;
+
+    @Column(length = 1000)
+    @Comment("상세 이미지 URL") // 상세 페이지 대표 이미지 URL
+    private String detailImageUrl;
+
     @Column(nullable = false)
     @Comment("조회수")
     @Builder.Default
@@ -74,12 +82,30 @@ public class News {
     private LocalDateTime lastModifiedDate;
 
     // 비즈니스 메서드
+    // 뉴스 생성(본문에 이미지 없는 뉴스일때)
     public static News createNews(String title, String content, String reference, NewsCategory category) {
         return News.builder()
                 .title(title)
                 .content(content)
                 .reference(reference)
                 .category(category != null ? category : NewsCategory.GENERAL)
+                .viewCount(0L)
+                .heartCount(0L)
+                .shareCount(0L)
+                .reportCount(0L)
+                .build();
+    }
+
+    // 뉴스 생성(본문에 이미지 존재 시)
+    public static News createNews(String title, String content, String reference, NewsCategory category, 
+                                  String thumbnailUrl, String detailImageUrl) {
+        return News.builder()
+                .title(title)
+                .content(content)
+                .reference(reference)
+                .category(category != null ? category : NewsCategory.GENERAL)
+                .thumbnailUrl(thumbnailUrl)
+                .detailImageUrl(detailImageUrl)
                 .viewCount(0L)
                 .heartCount(0L)
                 .shareCount(0L)

@@ -11,6 +11,8 @@ message NewsCreateRequest {
   string content = 2;
   string reference = 3;
   string category = 4;
+  string thumbnail_url = 5;
+  string detail_image_url = 6;
 }
 
 // 뉴스 응답
@@ -38,11 +40,23 @@ message GetCategoriesResponse {
   repeated CategoryInfo categories = 1;
 }
 
+// 카테고리 분류 요청
+message ClassifyRequest {
+  string title = 1;
+  string content = 2;
+}
+
+// 카테고리 분류 응답
+message ClassifyResponse {
+  string category = 1;  // displayName (예: "부동산", "정책", "일반")
+}
+
 // 빈 요청
 message Empty {}
 
 // 뉴스 서비스
 service NewsService {
   rpc CreateNews(NewsCreateRequest) returns (NewsResponse);
-  rpc GetCategories(Empty) returns (GetCategoriesResponse);  // 카테고리 정보 조회
+  rpc GetCategories(Empty) returns (GetCategoriesResponse);
+  rpc ClassifyCategory(ClassifyRequest) returns (ClassifyResponse);  // 카테고리 분류 (가중치 기반)
 }

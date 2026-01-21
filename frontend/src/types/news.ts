@@ -7,6 +7,7 @@ export interface NewsItem {
     id: number;
     title: string;
     reference: string;
+    thumbnailUrl?: string;
     viewCount: number;
     heartCount: number;
     shareCount: number;
@@ -26,6 +27,7 @@ export interface NewsUIItem {
 // 뉴스 상세 (상세 페이지용)
 export interface NewsDetail extends NewsItem {
     content: string;
+    detailImageUrl?: string;
     reportCount: number;
     lastModifiedDate: string;
 }
