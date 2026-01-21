@@ -4,6 +4,7 @@ import MainLayout from "../components/layouts/MainLayout";
 import { api } from "../utils/axios";
 import type {NewsItem, NewsPageResponse, NewsUIItem} from "../types/news.ts";
 import { ApiError, ErrorCode } from "../types/error";
+import { getNewsImage } from "../utils/newsImageUtils";
 
 // Debounce 함수
 function debounce<T extends (...args: any[]) => any>(
@@ -101,31 +102,25 @@ export default function NewsPage() {
 
       // API 데이터를 UI 형식으로 변환
       const formattedNews: NewsUIItem[] = response.data.content.map((news: NewsItem) => {
-        // 제목에서 카테고리 추출: [부동산] → "부동산"
-        const categoryMatch = news.title.match(/^\[([^\]]+)\]/);
-        const category = categoryMatch ? categoryMatch[1] : "일반";
+        // 제목에서 [카테고리] 태그 제거
         const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
 
-        // 썸네일 이미지 처리: DB에 저장된 이미지가 있으면 사용, 없으면 기본 이미지
-        const thumbnailImage = news.thumbnailUrl || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80";
-        
-        // 디버깅용 로그 (첫 번째 뉴스만)
-        if (news.id === response.data.content[0]?.id) {
-          console.log('📸 뉴스 이미지 확인:', {
-            newsId: news.id,
-            title: titleWithoutCategory,
-            thumbnailUrl: news.thumbnailUrl,
-            finalImage: thumbnailImage
-          });
-        }
+        // 🎨 이미지: DB 이미지 or 기본 이미지
+        const image = getNewsImage(
+          news.category,
+          titleWithoutCategory,
+          "",  // 목록에는 content 없음
+          news.thumbnailUrl,
+          news.id
+        );
 
         return {
           id: news.id,
-          category: category,
+          category: news.displayName,  // 한글로 표시
           title: titleWithoutCategory,
-          description: "", // API에 description 없음
+          description: "",
           date: new Date(news.createdDate).toLocaleDateString('ko-KR'),
-          image: thumbnailImage
+          image
         };
       });
 

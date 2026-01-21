@@ -13,7 +13,8 @@ public record NewsDetailResponse(
         String title,
         String content,
         String reference,
-        String category,
+        String category,        // Enum name (영문): REAL_ESTATE, MARKET, POLICY...
+        String displayName,     // 화면 표시명 (한글): 부동산, 시장, 정책...
         String detailImageUrl,
         Long viewCount,
         Long heartCount,
@@ -26,12 +27,15 @@ public record NewsDetailResponse(
      * Entity → DTO 변환 (상세용)
      */
     public static NewsDetailResponse from(News news) {
+        NewsCategory newsCategory = news.getCategory() != null ? news.getCategory() : NewsCategory.GENERAL;
+        
         return new NewsDetailResponse(
                 news.getId(),
                 news.getTitle(),
                 news.getContent(),
                 news.getReference(),
-                news.getCategory() != null ? news.getCategory().getDisplayName() : NewsCategory.GENERAL.getDisplayName(),
+                newsCategory.name(),           // REAL_ESTATE
+                newsCategory.getDisplayName(), // 부동산
                 news.getDetailImageUrl(),
                 news.getViewCount(),
                 news.getHeartCount(),

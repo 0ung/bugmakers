@@ -2,10 +2,14 @@
  * 뉴스 관련 타입 정의
  */
 
+export type NewsCategory = 'REAL_ESTATE' | 'MARKET' | 'POLICY' | 'FINANCE' | 'TAX' | 'INFRA' | 'GENERAL';
+
 // 뉴스 아이템 (목록용 - API 응답)
 export interface NewsItem {
     id: number;
     title: string;
+    category: NewsCategory;     // 영문 (로직용)
+    displayName: string;        // 한글 (화면 표시용)
     reference: string;
     thumbnailUrl?: string;
     viewCount: number;
@@ -17,7 +21,7 @@ export interface NewsItem {
 // 뉴스 UI 아이템 (화면 표시용)
 export interface NewsUIItem {
     id: number;
-    category: string;
+    category: string;        // 한글 (화면 표시용)
     title: string;
     description: string;
     date: string;

@@ -4,6 +4,7 @@ import MainLayout from "../components/layouts/MainLayout";
 import { api } from "../utils/axios";
 import type { NewsDetail } from "../types/news";
 import { ApiError, ErrorCode } from "../types/error";
+import { getNewsImage } from "../utils/newsImageUtils";
 
 export default function NewsDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -120,12 +121,12 @@ export default function NewsDetailPage() {
         // 즐겨찾기 취소
         await api.delete(`/api/news/${id}/favorite`);
         setIsFavorite(false);
-        console.log("✅ 즐겨찾기 취소 성공");
+        // console.log("✅ 즐겨찾기 취소 성공");
       } else {
         // 즐겨찾기 추가
         await api.post(`/api/news/${id}/favorite`);
         setIsFavorite(true);
-        console.log("✅ 즐겨찾기 추가 성공");
+        // console.log("✅ 즐겨찾기 추가 성공");
       }
     } catch (error) {
       if (!(error instanceof ApiError)) {
@@ -205,7 +206,18 @@ export default function NewsDetailPage() {
     );
   }
 
-  // UI
+  // 제목에서 [카테고리] 태그 제거
+  const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
+  
+  // 🎨 이미지: DB 이미지 or 기본 이미지
+  const detailImage = getNewsImage(
+    news.category,
+    titleWithoutCategory,
+    news.content,
+    news.detailImageUrl,
+    news.id
+  );
+
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto">
@@ -234,15 +246,15 @@ export default function NewsDetailPage() {
             />
           </svg>
           <img
-            src={news.detailImageUrl || "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1000&q=80"}
-            alt={news.title}
+            src={detailImage}
+            alt={titleWithoutCategory}
             className="rounded-2xl shadow w-full object-cover h-72"
           />
         </div>
 
         {/* 제목 */}
         <h1 className="text-2xl md:text-3xl font-bold mb-3 leading-tight">
-          {news.title}
+          {titleWithoutCategory}
         </h1>
 
         {/* 메타 정보 */}

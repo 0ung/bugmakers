@@ -13,7 +13,8 @@ public record NewsResponse(
         Long id,
         String title,
         String reference,
-        String category,
+        String category,        // Enum name (영문): REAL_ESTATE, MARKET, POLICY...
+        String displayName,     // 화면 표시명 (한글): 부동산, 시장, 정책...
         String thumbnailUrl,
         Long viewCount,
         Long heartCount,
@@ -24,11 +25,14 @@ public record NewsResponse(
      * Entity → DTO 변환 (목록용)
      */
     public static NewsResponse from(News news) {
+        NewsCategory newsCategory = news.getCategory() != null ? news.getCategory() : NewsCategory.GENERAL;
+        
         return new NewsResponse(
                 news.getId(),
                 news.getTitle(),
                 news.getReference(),
-                news.getCategory() != null ? news.getCategory().getDisplayName() : NewsCategory.GENERAL.getDisplayName(),
+                newsCategory.name(),           // REAL_ESTATE
+                newsCategory.getDisplayName(), // 부동산
                 news.getThumbnailUrl(),
                 news.getViewCount(),
                 news.getHeartCount(),
