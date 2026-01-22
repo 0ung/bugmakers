@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../../stores/authStore";
 import MainLayout from "../../components/layouts/MainLayout";
+import { getMemberRoleDisplayName } from "../../types/member";
 import {
   DndContext,
   DragOverlay,
@@ -153,7 +154,7 @@ export default function UserMyPage() {
               <p className="text-white/80 mb-3">{user.email?.address || "이메일 정보 없음"}</p>
               <div className="flex gap-3">
                 <span className="bg-white/30 backdrop-blur-sm px-4 py-1 rounded-full text-sm">
-                  👤 일반 회원
+                  👤 {getMemberRoleDisplayName(user.memberRole)}
                 </span>
               </div>
             </div>
@@ -311,10 +312,7 @@ function RegionsContent() {
   );
 }
 
-// ========================================
 // 공통 활동 섹션 상세 (리스트 표시)
-// ========================================
-
 function ActivitySectionDetail({ section }: { section: ActivitySectionConfig }) {
   // TODO: API 연동으로 실제 데이터 불러오기
   const mockData: any[] = [];
