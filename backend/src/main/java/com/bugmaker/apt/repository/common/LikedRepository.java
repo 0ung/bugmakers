@@ -40,7 +40,7 @@ public interface LikedRepository extends JpaRepository<Liked, Long> {
     WHERE l.member.id = :memberId
       AND l.news IS NOT NULL
     """)
-    Long countMyLikedNews(@Param("reportedId") Long memberId);
+    Long countMyLikedNews(@Param("memberId") Long memberId);
 
     // 2. 내가(주체) forum 게시물에(목적) 좋아요를 누른 count
     @Query("""
@@ -49,7 +49,7 @@ public interface LikedRepository extends JpaRepository<Liked, Long> {
     WHERE l.member.id = :memberId
       AND l.forum IS NOT NULL
     """)
-    Long countMyLikedForums(@Param("reportedId") Long memberId);
+    Long countMyLikedForums(@Param("memberId") Long memberId);
 
     // 3. 내가(주체) 댓글에(목적) 좋아요를 누른 count
     @Query("""
@@ -58,7 +58,7 @@ public interface LikedRepository extends JpaRepository<Liked, Long> {
     WHERE l.member.id = :memberId
       AND l.commented IS NOT NULL
     """)
-    Long countMyLikedComments(@Param("reportedId") Long memberId);
+    Long countMyLikedComments(@Param("memberId") Long memberId);
 
     // 4. 내가(주체) 모든 게시물(news, forum, comment)에(목적) 좋아요를 누른 count
     @Query("""
@@ -66,7 +66,7 @@ public interface LikedRepository extends JpaRepository<Liked, Long> {
     FROM Liked l
     WHERE l.member.id = :memberId
     """)
-    Long countAllMyLikes(@Param("reportedId") Long memberId);
+    Long countAllMyLikes(@Param("memberId") Long memberId);
 
 
     /* 마이페이지(USER) - 내가 좋아요 한 목록 조회 */
@@ -79,7 +79,7 @@ public interface LikedRepository extends JpaRepository<Liked, Long> {
     ORDER BY l.createdDate DESC
     """)
     Page<News> findMyLikedNews(
-            @Param("reportedId") Long memberId, Pageable pageable);
+            @Param("memberId") Long memberId, Pageable pageable);
 
     // 2. 내가 좋아요한 포럼 목록
     @Query("""
@@ -90,7 +90,7 @@ public interface LikedRepository extends JpaRepository<Liked, Long> {
     ORDER BY l.createdDate DESC
     """)
     Page<Forum> findMyLikedForums(
-            @Param("reportedId") Long memberId,
+            @Param("memberId") Long memberId,
             Pageable pageable
     );
 
@@ -103,7 +103,7 @@ public interface LikedRepository extends JpaRepository<Liked, Long> {
     ORDER BY l.createdDate DESC
     """)
     Page<Commented> findMyLikedComments(
-            @Param("reportedId") Long memberId,
+            @Param("memberId") Long memberId,
             Pageable pageable
     );
 
