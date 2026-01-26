@@ -32,7 +32,7 @@ public interface FavoritedRepository extends JpaRepository<Favorited, Long> {
     WHERE l.member.id = :memberId
       AND l.news IS NOT NULL
     """)
-    Long countMyFavoritedNews(@Param("reportedId") Long memberId);
+    Long countMyFavoritedNews(@Param("memberId") Long memberId);
 
     // 2. 내가(주체) forum 게시물에(목적) 즐겨찾기 한 count
     @Query("""
@@ -41,7 +41,7 @@ public interface FavoritedRepository extends JpaRepository<Favorited, Long> {
     WHERE l.member.id = :memberId
       AND l.forum IS NOT NULL
     """)
-    Long countMyFavoritedForums(@Param("reportedId") Long memberId);
+    Long countMyFavoritedForums(@Param("memberId") Long memberId);
 
     // 3. 내가(주체) 모든 게시물(news, forum)에(목적) 즐겨찾기 한 count
     @Query("""
@@ -49,7 +49,7 @@ public interface FavoritedRepository extends JpaRepository<Favorited, Long> {
     FROM Favorited l
     WHERE l.member.id = :memberId
     """)
-    Long countAllMyFavorites(@Param("reportedId") Long memberId);
+    Long countAllMyFavorites(@Param("memberId") Long memberId);
 
 
     /* 마이페이지(USER) - 내가 즐겨찾기 한 목록 조회 */
@@ -62,7 +62,7 @@ public interface FavoritedRepository extends JpaRepository<Favorited, Long> {
     ORDER BY l.createdDate DESC
     """)
     Page<News> findMyFavoritedNews(
-            @Param("reportedId") Long memberId, Pageable pageable);
+            @Param("memberId") Long memberId, Pageable pageable);
 
     // 2. 내가 즐겨찾기 한 포럼 목록
     @Query("""
@@ -73,7 +73,7 @@ public interface FavoritedRepository extends JpaRepository<Favorited, Long> {
     ORDER BY l.createdDate DESC
     """)
     Page<Forum> findMyFavoritedForums(
-            @Param("reportedId") Long memberId,
+            @Param("memberId") Long memberId,
             Pageable pageable
     );
 }

@@ -26,17 +26,24 @@ public interface ReportedRepository extends JpaRepository<Reported, Long> {
     boolean existsByReporter_IdAndTargetMember_Id(Long reporterId, Long targetMemberId);
 
 
-    /* 마이페이지(USER) - 내가 신고한 개수 */
+    /* 마이페이지(USER) */
+    // 내가 신고한 개수
     @Query("""
         SELECT COUNT(r)
         FROM Reported r
-        WHERE r.reporter.id = :memberId
+        WHERE r.reporter.id = :reporterId
     """)
     Long countMyReports(@Param("reporterId") Long reporterId);
 
-    /* 마이페이지(USER) - 내가 신고한 목록 */
+    // 내가 신고한 목록
+    @Query("""
+        SELECT r
+        FROM Reported r
+        WHERE r.reporter.id = :reporterId
+        ORDER BY r.createdDate DESC
+    """)
     Page<Reported> findByReporter_Id(
-            Long reporterId,
+            @Param("reporterId") Long reporterId,
             Pageable pageable
     );
 

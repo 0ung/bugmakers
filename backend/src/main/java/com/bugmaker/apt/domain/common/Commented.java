@@ -26,6 +26,9 @@ public class Commented extends BaseEntity {
     @Comment("작성자") //댓글 or 대댓글 작성자
     private Member member;
 
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "forum_id")
     @Comment("토론 ID")

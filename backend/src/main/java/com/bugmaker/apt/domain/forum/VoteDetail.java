@@ -1,6 +1,7 @@
 package com.bugmaker.apt.domain.forum;
 
 import com.bugmaker.apt.domain.member.Member;
+import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -12,7 +13,7 @@ import org.hibernate.annotations.Comment;
 @AllArgsConstructor
 @Builder
 @Comment("투표한 회원 정보 테이블")
-public class VoteDetail {
+public class VoteDetail extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Comment("투표 상세 ID")
