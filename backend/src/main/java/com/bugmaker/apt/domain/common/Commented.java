@@ -1,6 +1,6 @@
 package com.bugmaker.apt.domain.common;
 
-import com.bugmaker.apt.enums.CommentSeq;
+import com.bugmaker.apt.enums.menu.MenuLevel;
 import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.shared.BaseEntity;
@@ -41,7 +41,7 @@ public class Commented extends BaseEntity {
     @Enumerated(EnumType.ORDINAL)
     @Column(nullable = false)
     @Comment("댓글 순서 (1: 댓글, 2: 대댓글)")
-    private CommentSeq seq;
+    private MenuLevel seq;
 
     @Column(nullable = false)
     @Comment("좋아요 누적수")
@@ -60,7 +60,7 @@ public class Commented extends BaseEntity {
         return Commented.builder()
                 .member(member)
                 .forum(forum)
-                .seq(CommentSeq.COMMENT)
+                .seq(MenuLevel.COMMENT)
                 .build();
     }
 
@@ -71,7 +71,7 @@ public class Commented extends BaseEntity {
         return Commented.builder()
                 .member(member)
                 .forum(parentComment.getForum()) // 같은 forum
-                .seq(CommentSeq.RE_COMMENT)
+                .seq(MenuLevel.RE_COMMENT)
                 .build();
     }
 
@@ -87,11 +87,11 @@ public class Commented extends BaseEntity {
 
     /* 상태 판별 메서드 */
     public boolean isComment() {
-        return this.seq == CommentSeq.COMMENT;
+        return this.seq == MenuLevel.COMMENT;
     }
 
     public boolean isReComment() {
-        return this.seq == CommentSeq.RE_COMMENT;
+        return this.seq == MenuLevel.RE_COMMENT;
     }
 
 

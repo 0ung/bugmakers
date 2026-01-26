@@ -1,6 +1,6 @@
 package com.bugmaker.apt.repository.forum;
 
-import com.bugmaker.apt.enums.Status;
+import com.bugmaker.apt.enums.member.Status;
 import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.member.Member;
 import org.springframework.data.domain.Page;

@@ -9,7 +9,7 @@ import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsDetailResponse;
 import com.bugmaker.apt.domain.news.NewsResponse;
-import com.bugmaker.apt.enums.NewsCategory;
+import com.bugmaker.apt.enums.news.NewsCategory;
 import com.bugmaker.apt.repository.common.FavoritedRepository;
 import com.bugmaker.apt.repository.common.LikedRepository;
 import com.bugmaker.apt.repository.member.MemberRepository;

@@ -1,6 +1,6 @@
 package com.bugmaker.apt.domain.member;
 
-import com.bugmaker.apt.enums.Status;
+import com.bugmaker.apt.enums.member.Status;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

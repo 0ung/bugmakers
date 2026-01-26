@@ -13,4 +13,8 @@ ALTER TABLE news
 
 select * from news;
 
+-- 2026-01-26 menu  삭제하고 실행시 다시 만들고 데이터 넣음
 
+DROP TABLE IF EXISTS menu CASCADE;
+
+select * from menu

@@ -2,7 +2,7 @@ package com.bugmaker.apt.grpc;
 
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsResponse;
-import com.bugmaker.apt.enums.NewsCategory;
+import com.bugmaker.apt.enums.news.NewsCategory;
 import com.bugmaker.apt.grpc.proto.NewsProto;
 import com.bugmaker.apt.grpc.proto.NewsServiceGrpc;
 import com.bugmaker.apt.service.news.NewsService;

@@ -1,6 +1,6 @@
 package com.bugmaker.apt.repository;
 
-import com.bugmaker.apt.enums.Status;
+import com.bugmaker.apt.enums.member.Status;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.repository.member.MemberRepository;
 import jakarta.persistence.EntityManager;

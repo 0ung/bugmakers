@@ -1,7 +1,7 @@
 package com.bugmaker.apt.repository.news;
 
 import com.bugmaker.apt.domain.news.News;
-import com.bugmaker.apt.enums.NewsCategory;
+import com.bugmaker.apt.enums.news.NewsCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,7 +1,7 @@
 package com.bugmaker.apt.domain.trend;
 
 import com.bugmaker.apt.domain.shared.BaseEntity;
-import com.bugmaker.apt.enums.RegionLevel;
+import com.bugmaker.apt.enums.menu.MenuLevel;
 import jakarta.persistence.Entity;
 import lombok.*;
 import jakarta.persistence.*;
@@ -27,7 +27,7 @@ public class Region extends BaseEntity {
     // LV1, LV2, LV3, LV4
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private RegionLevel level;
+    private MenuLevel level;
 
     // 상위 지역 (self join)
     @ManyToOne(fetch = FetchType.LAZY)

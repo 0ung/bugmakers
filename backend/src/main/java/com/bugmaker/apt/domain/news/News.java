@@ -1,7 +1,7 @@
 package com.bugmaker.apt.domain.news;
 
 import com.bugmaker.apt.domain.shared.BaseEntity;
-import com.bugmaker.apt.enums.NewsCategory;
+import com.bugmaker.apt.enums.news.NewsCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;

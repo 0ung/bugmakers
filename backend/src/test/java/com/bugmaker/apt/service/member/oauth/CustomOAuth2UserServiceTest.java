@@ -2,7 +2,7 @@ package com.bugmaker.apt.service.member.oauth;
 
 import com.bugmaker.apt.common.exception.custom.MemberDeactivatedException;
 import com.bugmaker.apt.constants.IllegalReason;
-import com.bugmaker.apt.enums.Status;
+import com.bugmaker.apt.enums.member.Status;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.member.NicknameCreator;
 import com.bugmaker.apt.repository.member.MemberRepository;

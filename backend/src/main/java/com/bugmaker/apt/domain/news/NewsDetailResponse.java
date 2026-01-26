@@ -1,6 +1,6 @@
 package com.bugmaker.apt.domain.news;
 
-import com.bugmaker.apt.enums.NewsCategory;
+import com.bugmaker.apt.enums.news.NewsCategory;
 
 import java.time.LocalDateTime;
 

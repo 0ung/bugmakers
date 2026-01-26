@@ -1,6 +1,6 @@
 package com.bugmaker.apt.repository.common;
 
-import com.bugmaker.apt.enums.CommentSeq;
+import com.bugmaker.apt.enums.menu.MenuLevel;
 import com.bugmaker.apt.domain.common.Commented;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,7 +14,7 @@ public interface CommentedRepository extends JpaRepository<Commented, Long> {
     List<Commented> findByForum_Id(Long forumId);
 
     /* 댓글 / 대댓글 공용 */
-    List<Commented> findByForum_IdAndSeq(Long forumId, CommentSeq seq);
+    List<Commented> findByForum_IdAndSeq(Long forumId, MenuLevel seq);
 
     /* 작성자 기준 */
     List<Commented> findByMember_Id(Long memberId);
