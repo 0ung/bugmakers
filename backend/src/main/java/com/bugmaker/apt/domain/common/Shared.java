@@ -11,14 +11,14 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(
-        name = "favorited",
+        name = "shared",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_favorited_member_news",
+                        name = "uk_shared_member_news",
                         columnNames = {"member_id", "news_id"}
                 ),
                 @UniqueConstraint(
-                        name = "uk_favorited_member_forum",
+                        name = "uk_shared_member_forum",
                         columnNames = {"member_id", "forum_id"}
                 )
         }
@@ -28,10 +28,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Comment("즐겨찾기 테이블")
-public class Favorited extends BaseEntity {
+@Comment("공유 테이블")
+public class Shared extends BaseEntity {
 
-    /* 즐겨찾기 주체 */
+    /* 공유 주체 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     @Comment("회원 ID")
@@ -48,26 +48,26 @@ public class Favorited extends BaseEntity {
     private Forum forum;
 
     /* 생성 팩토리 */
-    public static Favorited forNews(Member member, News news) {
-        return Favorited.builder()
+    public static Shared forNews(Member member, News news) {
+        return Shared.builder()
                 .member(member)
                 .news(news)
                 .build();
     }
 
-    public static Favorited forForum(Member member, Forum forum) {
-        return Favorited.builder()
+    public static Shared forForum(Member member, Forum forum) {
+        return Shared.builder()
                 .member(member)
                 .forum(forum)
                 .build();
     }
 
-    /* 타입 판별 (즐겨찾기 여부 확인) */
-    public boolean isNewsFavorite() {
+    /* 타입 판별 (공유 여부 확인) */
+    public boolean isNewsShare() {
         return news != null;
     }
 
-    public boolean isForumFavorite() {
+    public boolean isForumShare() {
         return forum != null;
     }
 }

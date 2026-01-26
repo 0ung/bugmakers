@@ -7,7 +7,7 @@ import com.bugmaker.apt.domain.member.NicknameCreator;
 import com.bugmaker.apt.dto.member.oauth.CustomOAuth2User;
 import com.bugmaker.apt.dto.member.oauth.OAuth2UserInfo;
 import com.bugmaker.apt.dto.member.oauth.OAuth2UserInfoFactory;
-import com.bugmaker.apt.repository.MemberRepository;
+import com.bugmaker.apt.repository.member.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

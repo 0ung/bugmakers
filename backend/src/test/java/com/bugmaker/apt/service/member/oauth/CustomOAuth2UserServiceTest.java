@@ -2,10 +2,10 @@ package com.bugmaker.apt.service.member.oauth;
 
 import com.bugmaker.apt.common.exception.custom.MemberDeactivatedException;
 import com.bugmaker.apt.constants.IllegalReason;
-import com.bugmaker.apt.constants.Status;
+import com.bugmaker.apt.enums.Status;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.member.NicknameCreator;
-import com.bugmaker.apt.repository.MemberRepository;
+import com.bugmaker.apt.repository.member.MemberRepository;
 import com.bugmaker.apt.service.illegal.IllegalService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,8 @@ class CustomOAuth2UserServiceTest {
 
         // 회원이 자동 생성되었는지 확인
         Member member = memberRepository.findByProviderAndProviderId("google", "new-user-id").orElseThrow();
-        assertThat(member.getEmail().address()).isEqualTo("newuser@gmail.com");
+//        assertThat(member.getEmail().address()).isEqualTo("newuser@gmail.com"); //record 에서
+        assertThat(member.getEmail().getAddress()).isEqualTo("newuser@gmail.com"); //class로 변경함
         assertThat(member.isActive()).isTrue();
         assertThat(member.getStatus()).isEqualTo(Status.ACTIVE);
     }

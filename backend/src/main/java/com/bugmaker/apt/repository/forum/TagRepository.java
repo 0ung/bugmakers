@@ -1,4 +1,4 @@
-package com.bugmaker.apt.repository;
+package com.bugmaker.apt.repository.forum;
 
 import com.bugmaker.apt.domain.tag.Tag;
 import org.springframework.data.repository.Repository;

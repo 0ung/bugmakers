@@ -1,4 +1,4 @@
-package com.bugmaker.apt.repository;
+package com.bugmaker.apt.repository.news;
 
 import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.enums.NewsCategory;

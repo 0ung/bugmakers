@@ -17,7 +17,7 @@ public record NewsDetailResponse(
         String displayName,     // 화면 표시명 (한글): 부동산, 시장, 정책...
         String detailImageUrl,
         Long viewCount,
-        Long heartCount,
+        Long likeCount,
         Long shareCount,
         Long reportCount,
         LocalDateTime createdDate,
@@ -38,7 +38,7 @@ public record NewsDetailResponse(
                 newsCategory.getDisplayName(), // 부동산
                 news.getDetailImageUrl(),
                 news.getViewCount(),
-                news.getHeartCount(),
+                news.getLikeCount(),
                 news.getShareCount(),
                 news.getReportCount(),
                 news.getCreatedDate(),

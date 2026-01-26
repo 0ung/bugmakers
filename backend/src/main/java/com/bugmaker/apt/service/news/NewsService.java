@@ -4,12 +4,16 @@ import com.bugmaker.apt.common.exception.custom.CustomException;
 import com.bugmaker.apt.common.exception.errorcode.ErrorCode;
 import com.bugmaker.apt.domain.common.Favorited;
 import com.bugmaker.apt.domain.common.Liked;
+import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.news.News;
 import com.bugmaker.apt.domain.news.NewsCreateRequest;
 import com.bugmaker.apt.domain.news.NewsDetailResponse;
 import com.bugmaker.apt.domain.news.NewsResponse;
 import com.bugmaker.apt.enums.NewsCategory;
-import com.bugmaker.apt.repository.*;
+import com.bugmaker.apt.repository.common.FavoritedRepository;
+import com.bugmaker.apt.repository.common.LikedRepository;
+import com.bugmaker.apt.repository.member.MemberRepository;
+import com.bugmaker.apt.repository.news.NewsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,6 +34,7 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class NewsService {
 
+    private final MemberRepository memberRepository;
     private final NewsRepository newsRepository;
     private final LikedRepository likedRepository;
     private final FavoritedRepository favoritedRepository;
@@ -212,47 +217,50 @@ public class NewsService {
     }
 
     /**
-     * 좋아요 증가 (Heart Count 증가)
+     * 좋아요 증가 (Like Count 증가)
      * 
      * @param memberId 회원 ID
      * @param newsId 뉴스 ID
      * @throws CustomException 이미 좋아요를 누른 경우 또는 뉴스를 찾을 수 없는 경우
      */
     @Transactional
-    public void increaseHeartCount(Long memberId, Long newsId) {
+    public void increaseLikeCount(Long memberId, Long newsId) {
         // 중복 체크
-        if (likedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+        if (likedRepository.existsByMember_IdAndNews_Id(memberId, newsId)) {
             throw new CustomException(ErrorCode.ALREADY_LIKED);
         }
 
         News news = newsRepository.findById(newsId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
-        likedRepository.save(Liked.forNews(memberId, newsId));
-        news.increaseHeartCount();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        likedRepository.save(Liked.forNews(member, news));
+        news.increaseLikeCount();
         
         log.info("✅ 좋아요 추가 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
     }
 
     /**
-     * 좋아요 취소 (Heart Count 감소)
+     * 좋아요 취소 (Like Count 감소)
      * 
      * @param memberId 회원 ID
      * @param newsId 뉴스 ID
      * @throws CustomException 좋아요를 누르지 않은 경우 또는 뉴스를 찾을 수 없는 경우
      */
     @Transactional
-    public void decreaseHeartCount(Long memberId, Long newsId) {
+    public void decreaseLikeCount(Long memberId, Long newsId) {
         // 좋아요 여부 체크
-        if (!likedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+        if (!likedRepository.existsByMember_IdAndNews_Id(memberId, newsId)) {
             throw new CustomException(ErrorCode.NOT_LIKED_YET);
         }
 
         News news = newsRepository.findById(newsId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
-        likedRepository.deleteByMemberIdAndNewsId(memberId, newsId);
-        news.decreaseHeartCount();
+        likedRepository.deleteByMember_IdAndNews_Id(memberId, newsId);
+        news.decreaseLikeCount();
         
         log.info("✅ 좋아요 취소 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
     }
@@ -265,7 +273,7 @@ public class NewsService {
      * @return 좋아요 여부
      */
     public boolean isLikedByMe(Long memberId, Long newsId) {
-        return likedRepository.existsByMemberIdAndNewsId(memberId, newsId);
+        return likedRepository.existsByMember_IdAndNews_Id(memberId, newsId);
     }
 
     /**
@@ -278,15 +286,18 @@ public class NewsService {
     @Transactional
     public void addFavorite(Long memberId, Long newsId) {
         // 중복 체크
-        if (favoritedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+        if (favoritedRepository.existsByMember_IdAndNews_Id(memberId, newsId)) {
             throw new CustomException(ErrorCode.ALREADY_FAVORITED);
         }
 
-        // 뉴스 존재 여부 확인
-        newsRepository.findById(newsId)
+        // 뉴스 & 멤버 존재 여부 확인
+        News news = newsRepository.findById(newsId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
-        favoritedRepository.save(Favorited.forNews(memberId, newsId));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        favoritedRepository.save(Favorited.forNews(member, news));
         
         log.info("✅ 즐겨찾기 추가 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
     }
@@ -301,7 +312,7 @@ public class NewsService {
     @Transactional
     public void removeFavorite(Long memberId, Long newsId) {
         // 즐겨찾기 여부 체크
-        if (!favoritedRepository.existsByMemberIdAndNewsId(memberId, newsId)) {
+        if (!favoritedRepository.existsByMember_IdAndNews_Id(memberId, newsId)) {
             throw new CustomException(ErrorCode.NOT_FAVORITED_YET);
         }
 
@@ -309,7 +320,7 @@ public class NewsService {
         newsRepository.findById(newsId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
-        favoritedRepository.deleteByMemberIdAndNewsId(memberId, newsId);
+        favoritedRepository.deleteByMember_IdAndNews_Id(memberId, newsId);
         
         log.info("✅ 즐겨찾기 취소 - 회원 ID: {}, 뉴스 ID: {}", memberId, newsId);
     }
@@ -322,7 +333,7 @@ public class NewsService {
      * @return 즐겨찾기 여부
      */
     public boolean isFavoritedByMe(Long memberId, Long newsId) {
-        return favoritedRepository.existsByMemberIdAndNewsId(memberId, newsId);
+        return favoritedRepository.existsByMember_IdAndNews_Id(memberId, newsId);
     }
 
     /**

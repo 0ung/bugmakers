@@ -4,6 +4,8 @@ import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.forum.ForumFixture;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.member.MemberFixture;
+import com.bugmaker.apt.repository.forum.ForumRepository;
+import com.bugmaker.apt.repository.member.MemberRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

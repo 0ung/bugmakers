@@ -1,8 +1,8 @@
 package com.bugmaker.apt.service.member;
 
-import com.bugmaker.apt.constants.MemberRole;
+import com.bugmaker.apt.enums.MemberRole;
 import com.bugmaker.apt.domain.member.Member;
-import com.bugmaker.apt.repository.MemberRepository;
+import com.bugmaker.apt.repository.member.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;

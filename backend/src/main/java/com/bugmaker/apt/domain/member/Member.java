@@ -1,7 +1,7 @@
 package com.bugmaker.apt.domain.member;
 
-import com.bugmaker.apt.constants.MemberRole;
-import com.bugmaker.apt.constants.Status;
+import com.bugmaker.apt.enums.MemberRole;
+import com.bugmaker.apt.enums.Status;
 import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;

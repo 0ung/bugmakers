@@ -1,6 +1,6 @@
 package com.bugmaker.apt.domain.common;
 
-import com.bugmaker.apt.constants.Status;
+import com.bugmaker.apt.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;

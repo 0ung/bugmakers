@@ -55,7 +55,7 @@ public class NewsGrpcService extends NewsServiceGrpc.NewsServiceImplBase {
                     .setReference(domainResponse.reference())
                     .setCategory(domainResponse.category())
                     .setViewCount(domainResponse.viewCount())
-                    .setHeartCount(domainResponse.heartCount())
+                    .setLikeCount(domainResponse.likeCount())
                     .setShareCount(domainResponse.shareCount())
                     .setReportCount(0L)  // 크롤러 등록 시에는 reportCount = 0
                     .setCreatedDate(domainResponse.createdDate().toString())

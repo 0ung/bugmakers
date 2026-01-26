@@ -1,6 +1,6 @@
 package com.bugmaker.apt.domain.forum;
 
-import com.bugmaker.apt.constants.Status;
+import com.bugmaker.apt.enums.Status;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
@@ -36,7 +36,7 @@ public class Forum extends BaseEntity {
 
     private Long viewCount;
 
-    private Long heartCount;
+    private Long likeCount;
 
     private Long reportCount;
 
@@ -54,7 +54,7 @@ public class Forum extends BaseEntity {
         forum.member = member;
 
         forum.viewCount = 0L;
-        forum.heartCount = 0L;
+        forum.likeCount = 0L;
         forum.reportCount = 0L;
 
         return forum;
@@ -84,14 +84,14 @@ public class Forum extends BaseEntity {
         this.viewCount++;
     }
 
-    public void increaseHeartCount() {
-        this.heartCount++;
+    public void increaseLikeCount() {
+        this.likeCount++;
     }
 
-    public void decreaseHeartCount() {
-        state(this.heartCount > 0 ,"좋아요 누적수는 마이너스가 될 수 없습니다.");
-        if (this.heartCount > 0) {
-            this.heartCount--;
+    public void decreaseLikeCount() {
+        state(this.likeCount > 0 ,"좋아요 누적수는 마이너스가 될 수 없습니다.");
+        if (this.likeCount > 0) {
+            this.likeCount--;
         }
     }
 

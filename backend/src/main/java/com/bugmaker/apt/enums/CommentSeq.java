@@ -1,4 +1,4 @@
-package com.bugmaker.apt.constants;
+package com.bugmaker.apt.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

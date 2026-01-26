@@ -1,4 +1,4 @@
-package com.bugmaker.apt.repository;
+package com.bugmaker.apt.repository.member;
 
 import com.bugmaker.apt.domain.member.Member;
 import org.springframework.data.repository.Repository;
