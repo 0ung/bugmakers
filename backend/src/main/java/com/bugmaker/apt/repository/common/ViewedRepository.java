@@ -34,7 +34,7 @@ public interface ViewedRepository extends JpaRepository<Viewed, Long> {
         GROUP BY v.news
         ORDER BY COUNT(v) DESC
     """)
-    Page<News> findFrequentNews(@Param("memberId") Long memberId, Pageable pageable);
+    Page<News> findViewedNews(@Param("memberId") Long memberId, Pageable pageable);
 
     // 2. 자주 보는 포럼 (조회수 순위)
     @Query("""
@@ -45,5 +45,5 @@ public interface ViewedRepository extends JpaRepository<Viewed, Long> {
         GROUP BY v.forum
         ORDER BY COUNT(v) DESC
     """)
-    Page<Forum> findFrequentForums(@Param("memberId") Long memberId, Pageable pageable);
+    Page<Forum> findViewedForums(@Param("memberId") Long memberId, Pageable pageable);
 }
