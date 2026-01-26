@@ -8,6 +8,7 @@ import CommunityWritePage from "./pages/CommunityWritePage";
 import MyPage from "./pages/MyPage";
 import NewsPage from "./pages/NewsPage";
 import NewsDetailPage from "./pages/NewsDetailPage";
+import TrendPage from "./pages/TrendPage";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 // ... 나머지 페이지들 import
 
@@ -24,7 +25,9 @@ export default function AppRouter() {
         <Route path="/mypage" element={<MyPage />} />
         {/* 뉴스 */}
         <Route path="/news" element={<NewsPage />} />
-        <Route path="/news/:id" element={<NewsDetailPage />} />{" "}
+        <Route path="/news/:id" element={<NewsDetailPage />} />
+        {/* 시세트렌드 */}
+        <Route path="/trend" element={<TrendPage />} />
         {/* 커뮤니티 관련 */}
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/community/:id" element={<CommunityDetailPage />} />

@@ -1,6 +1,7 @@
 // src/components/layout/Header.tsx
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
+import { TOP_MENUS_WITH_PATH } from "@/types/menu";
 import logo from "@/assets/images/myHome.png";
 import { useEffect } from "react";
 
@@ -22,11 +23,8 @@ export default function Header() {
   //   }
   // }, [user]);
 
-  const navList = [
-    { name: "부동산뉴스", path: "/news" },
-    { name: "시세트렌드", path: "/trend" },
-    { name: "커뮤니티", path: "/community" },
-  ];
+  // menu.ts에서 최상위 메뉴 가져오기 (하드코딩 제거)
+  const navList = TOP_MENUS_WITH_PATH;
 
   return (
     <header className="sticky top-0 bg-white shadow z-50">
