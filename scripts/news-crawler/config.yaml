@@ -1,81 +1,41 @@
 # RSS 뉴스 출처 설정
-# 부동산 관련 뉴스만 수집
+# 본문 제공이 확인된 RSS만 사용
 
 rss_sources:
-  # 네이버 뉴스
-  - name: "네이버 부동산"
-    url: "https://news.naver.com/main/rss/section.naver?sid1=101"
-    category: "부동산"
+  # 본문 제공 확인된 RSS 
+  - name: "JTBC 경제"
+    url: "https://fs.jtbc.co.kr/RSS/economy.xml"
+    category: "경제"
     enabled: true
-    
-  - name: "네이버 경제"
-    url: "https://news.naver.com/main/rss/section.naver?sid1=101"
+  
+  - name: "SBS 경제"
+    url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=02"
+    category: "경제"
+    enabled: true
+  
+  - name: "SBS 사회"
+    url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=07"
+    category: "사회"
+    enabled: true
+  
+  # 본문 제공 여부 미확인
+  - name: "YTN 경제"
+    url: "https://www.ytn.co.kr/_rss/economy.xml"
+    category: "경제"
+    enabled: true
+  
+  - name: "연합뉴스TV 경제"
+    url: "https://www.yonhapnewstv.co.kr/browse/feed/"
+    category: "경제"
+    enabled: true
+  
+  - name: "채널A 경제"
+    url: "https://www.ichannela.com/RSS/economy.xml"
     category: "경제"
     enabled: true
 
-  # 다음 뉴스
-  - name: "다음 부동산"
-    url: "https://media.daum.net/rss/home/"
-    category: "부동산"
-    enabled: true
-
-  # 언론사별
-  - name: "매일경제"
-    url: "https://www.mk.co.kr/rss/30100041/"
-    category: "부동산"
-    enabled: true
-    
-  - name: "한국경제"
-    url: "https://www.hankyung.com/feed/estate"
-    category: "부동산"
-    enabled: true
-    
-  - name: "서울경제"
-    url: "https://www.sedaily.com/RSS/S11.xml"
-    category: "부동산"
-    enabled: true
-
-# 키워드 필터링 (제목에 이 단어가 포함된 뉴스만 수집)
-keywords:
-  부동산:
-    - "아파트"
-    - "분양"
-    - "청약"
-    - "재건축"
-    - "재개발"
-    - "전세"
-    - "매매"
-    - "부동산"
-  
-  정책:
-    - "정부"
-    - "국토부"
-    - "규제"
-    - "법안"
-    - "정책"
-    - "공시가"
-  
-  시장:
-    - "거래"
-    - "시세"
-    - "가격"
-    - "하락"
-    - "상승"
-  
-  금융:
-    - "대출"
-    - "금리"
-    - "담보"
-    - "DSR"
-    - "LTV"
-
 # 크롤링 설정
 crawler:
-  # 중복 체크 기간 (일)
   duplicate_check_days: 7
-  
-  # 요청 간격 (초)
-  request_delay: 1
-  
-  # 최대 뉴스 개수 (한 번에 수집)
-  max_news_per_run: 50
+  request_delay: 0
+  max_news_per_run: 100

@@ -9,10 +9,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 소스 코드 복사
 COPY . .
 
-# 환경 변수 (기본값공란, docker-compose에서 오버라이드)
+# 환경 변수 (기본값 공란, docker-compose에서 오버라이드)
 ENV BACKEND_URL=""
 ENV NEWS_CRAWLER_API_KEY=""
 ENV LOG_LEVEL=INFO
 
-# 스케줄러 실행
-CMD ["python", "crawler.py"]
+# 대기 상태 (수동 실행용)
+# 수동 실행: docker exec bugmaker-news-crawler python crawler.py
+CMD ["tail", "-f", "/dev/null"]

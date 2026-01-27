@@ -1,5 +1,6 @@
 package com.bugmaker.apt.domain.news;
 
+import com.bugmaker.apt.enums.news.NewsCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -19,19 +20,17 @@ public record NewsCreateRequest(
         
         @NotBlank(message = "출처는 필수입니다")
         @Size(max = 500, message = "출처는 500자를 초과할 수 없습니다")
-        String reference
+        String reference,
+
+        String category,
+        
+        String thumbnailUrl,
+        
+        String detailImageUrl
 ) {
-    /**
-     * DTO → Entity 변환
-     */
+    /** DTO → Entity 변환 */
     public News toEntity() {
-        return News.builder()
-                .title(title)
-                .content(content)
-                .reference(reference)
-                .viewCount(0L)
-                .heartCount(0L)
-                .reportCount(0L)
-                .build();
+        NewsCategory newsCategory = NewsCategory.fromDisplayName(category);
+        return News.createNews(title, content, reference, newsCategory, thumbnailUrl, detailImageUrl);
     }
 }

@@ -1,5 +1,6 @@
 package com.bugmaker.apt.domain.forum;
 
+import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -7,7 +8,11 @@ import lombok.*;
 @Table(name = "vote")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Vote {
+@AllArgsConstructor
+@Builder
+@Comment("투표 마스터 테이블")
+public class Vote extends BaseEntity {
+  
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

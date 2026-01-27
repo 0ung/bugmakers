@@ -1,6 +1,7 @@
 // src/components/layout/Header.tsx
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
+import { TOP_MENUS_WITH_PATH } from "@/types/menu";
 import logo from "@/assets/images/myHome.png";
 import { useEffect } from "react";
 
@@ -15,14 +16,18 @@ export default function Header() {
     if (!isInitialized) loadUser();
   }, [isInitialized, loadUser]);
 
-  const navList = [
-    { name: "부동산뉴스", path: "/news" },
-    { name: "시세트렌드", path: "/trend" },
-    { name: "커뮤니티", path: "/community" },
-  ];
+  // user 변경 감지용 (로그 전용)
+  // useEffect(() => {
+  //   if (user) {
+  //     console.log("user(json):", JSON.stringify(user, null, 2));
+  //   }
+  // }, [user]);
+
+  // menu.ts에서 최상위 메뉴 가져오기 (하드코딩 제거)
+  const navList = TOP_MENUS_WITH_PATH;
 
   return (
-    <header className="sticky top-0 bg-white shadow z-10">
+    <header className="sticky top-0 bg-white shadow z-50">
       <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col items-center text-center relative">
         {/* 로고 */}
         <Link to="/" className="block mb-1">
@@ -64,7 +69,7 @@ export default function Header() {
                 onClick={() => navigate("/mypage")}
                 className="text-blue-600 border-2 border-blue-600 px-3 py-1.5 rounded-md hover:bg-blue-50 transition font-medium"
               >
-                {user.username}님
+                {user.nickname}님
               </button>
               <button
                 onClick={async () => {

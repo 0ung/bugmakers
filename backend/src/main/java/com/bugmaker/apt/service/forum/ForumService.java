@@ -6,7 +6,7 @@ import com.bugmaker.apt.domain.forum.*;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.dto.common.SliceResponse;
 import com.bugmaker.apt.dto.forum.ForumListDto;
-import com.bugmaker.apt.repository.ForumRepository;
+import com.bugmaker.apt.repository.forum.ForumRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +32,7 @@ public class ForumService {
                         forum.getContent(),
                         forum.getMember().getNickname(),
                         forum.getViewCount(),
-                        forum.getHeartCount(),
+                        forum.getLikeCount(),
                         forum.getReportCount(),
                         forum.getCreatedDate(),
                         forum.getLastModifiedDate()

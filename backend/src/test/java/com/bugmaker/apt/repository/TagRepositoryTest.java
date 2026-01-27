@@ -1,6 +1,7 @@
 package com.bugmaker.apt.repository;
 
 import com.bugmaker.apt.domain.tag.Tag;
+import com.bugmaker.apt.repository.forum.TagRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
