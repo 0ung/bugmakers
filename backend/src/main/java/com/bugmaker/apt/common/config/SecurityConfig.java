@@ -52,8 +52,8 @@ public class SecurityConfig {
                         .requestMatchers("/", "/oauth2/**", "/error", "/*.html", "/*.css", "/*.js"
                                 , "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                         .requestMatchers("/api/news/**").permitAll()
-                        .anyRequest().permitAll())  // 임시로 모두 허용 (개발단계)
-//                        .anyRequest().authenticated())  // 나머지는 인증 필요
+//                        .anyRequest().permitAll())  // 임시로 모두 허용 (개발단계)
+                        .anyRequest().authenticated())  // 나머지는 인증 필요
 
                 // 폼 로그인 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)

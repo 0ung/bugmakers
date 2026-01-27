@@ -1,6 +1,10 @@
 package com.bugmaker.apt.domain.forum;
 
+import java.util.List;
+
 public record ForumCreateRequest(
         String title,
-        String content) {
+        String content,
+        List<VoteCreateRequest> voteList
+        ) {
 }

@@ -32,6 +32,9 @@ public class Forum extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
+    @OneToMany(mappedBy = "forum", cascade = CascadeType.ALL)
+    private List<Vote> voteList = new ArrayList<>();
+
     @OneToMany(mappedBy = "forum")
     private List<ForumTagRelation> forumTagRelationList = new ArrayList<>();
 
@@ -113,6 +116,11 @@ public class Forum extends BaseEntity {
 
     public void increaseReportCount() {
         this.reportCount++;
+    }
+
+    public void addVoteContent(Vote vote) {
+        this.voteList.add(vote);
+        vote.setForum(this);
     }
 
 }

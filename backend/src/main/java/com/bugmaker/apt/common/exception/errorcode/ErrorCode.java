@@ -22,6 +22,7 @@ public enum ErrorCode {
     ALREADY_LIKED(409, HttpStatus.CONFLICT, "이미 좋아요를 누른 뉴스입니다."),
     ALREADY_FAVORITED(409, HttpStatus.CONFLICT, "이미 즐겨찾기한 뉴스입니다."),
 
+
     INTERNAL_SERVER_ERROR(500, HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류입니다");
 
     private final Integer code;
