@@ -32,3 +32,10 @@ alter table commented
     drop constraint commented_seq_check;
 
 
+alter table news add column deleted boolean;
+
+update news set deleted = false;
+
+
+
+

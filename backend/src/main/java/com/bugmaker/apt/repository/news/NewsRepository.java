@@ -62,4 +62,10 @@ public interface NewsRepository extends JpaRepository<News, Long> {
      */
     @Query("SELECT DISTINCT n.category FROM News n WHERE n.category IS NOT NULL ORDER BY n.category")
     List<NewsCategory> findDistinctCategories();
+
+
+
+//    // 삭제된 것도 보려면 native query 사용
+//    @Query(value = "SELECT * FROM news WHERE id = :id", nativeQuery = true)
+//    News findByIdIncludingDeleted(@Param("id") Long id);
 }

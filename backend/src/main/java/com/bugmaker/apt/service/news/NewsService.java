@@ -16,6 +16,7 @@ import com.bugmaker.apt.repository.member.MemberRepository;
 import com.bugmaker.apt.repository.news.NewsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -350,5 +351,19 @@ public class NewsService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
 
         news.increaseReportCount();
+    }
+
+
+
+//    // Before: 물리 삭제
+//    public void deleteNews(Long id) {
+//        newsRepository.deleteById(id);
+//    }
+
+    // After: 논리 삭제
+    public void deleteNews(Long id) {
+        News news = newsRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.NEWS_NOT_FOUND));
+        news.delete(); // deleted = true
     }
 }

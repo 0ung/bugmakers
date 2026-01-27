@@ -1,10 +1,11 @@
 package com.bugmaker.apt.domain.news;
 
-import com.bugmaker.apt.domain.shared.BaseEntity;
+import com.bugmaker.apt.domain.shared.CoreEntity;
 import com.bugmaker.apt.enums.news.NewsCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
+import org.hibernate.annotations.Where;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import static io.jsonwebtoken.lang.Assert.state;
@@ -15,13 +16,14 @@ import static io.jsonwebtoken.lang.Assert.state;
     @UniqueConstraint(name = "uk_news_title", columnNames = "title"),
     @UniqueConstraint(name = "uk_news_reference", columnNames = "reference")
 })
+@Where(clause = "deleted = false")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @Comment("뉴스 테이블")
-public class News extends BaseEntity {
+public class News extends CoreEntity {
 
     @Column(nullable = false, length = 200)
     @Comment("제목")
