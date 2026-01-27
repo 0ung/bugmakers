@@ -1,7 +1,5 @@
 package com.bugmaker.apt.domain.common;
 
-import com.bugmaker.apt.constants.IllegalReason;
-import com.bugmaker.apt.constants.IllegalStatus;
 import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.shared.BaseEntity;
