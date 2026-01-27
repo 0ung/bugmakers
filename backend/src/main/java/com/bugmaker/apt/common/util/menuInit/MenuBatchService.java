@@ -2,8 +2,8 @@ package com.bugmaker.apt.common.util.menuInit;
 
 import com.bugmaker.apt.domain.common.Menu;
 import com.bugmaker.apt.enums.member.Status;
-import com.bugmaker.apt.enums.menu.MenuLevel;
-import com.bugmaker.apt.enums.menu.MenuType;
+import com.bugmaker.apt.enums.common.MenuLevel;
+import com.bugmaker.apt.enums.common.MenuType;
 import com.bugmaker.apt.repository.common.MenuRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

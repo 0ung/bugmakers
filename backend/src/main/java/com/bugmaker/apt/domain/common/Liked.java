@@ -79,13 +79,9 @@ public class Liked extends BaseEntity {
     }
 
     /* 타입 판별 (좋아요 여부 확인) */
-    public boolean isNewsLike() {
-        return news != null;
-    }
+    public boolean isNewsLike() { return news != null; }
 
-    public boolean isForumLike() {
-        return forum != null;
-    }
+    public boolean isForumLike() { return forum != null; }
 
     public boolean isCommentLike() { return commented != null; }
 }

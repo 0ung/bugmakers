@@ -17,4 +17,18 @@ select * from news;
 
 DROP TABLE IF EXISTS menu CASCADE;
 
-select * from menu
+select * from menu;
+
+-- 2026-01-27
+
+ALTER TABLE news
+    RENAME COLUMN favorited_count TO favorite_count;
+
+SELECT conname
+FROM pg_constraint
+WHERE conrelid = 'commented'::regclass; -- commented_seq_check
+
+alter table commented
+    drop constraint commented_seq_check;
+
+

@@ -1,6 +1,6 @@
 package com.bugmaker.apt.domain.common;
 
-import com.bugmaker.apt.enums.menu.MenuLevel;
+import com.bugmaker.apt.enums.common.MenuLevel;
 import com.bugmaker.apt.domain.forum.Forum;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.shared.BaseEntity;
@@ -41,7 +41,7 @@ public class Commented extends BaseEntity {
           ORDINAL : enum 순서 변경 불가 (0부터) / 중간 값 추가 불가 / 의미추측 어려움
           STRING :  enum 순서 변경 영향 없음 / enum 중간에 값 추가 가능 / DB 가독성 최고 / 문자열 저장 (영향력 크지 않은 용량 증가)
 */
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Comment("댓글 순서 (1: 댓글, 2: 대댓글)")
     private MenuLevel seq;

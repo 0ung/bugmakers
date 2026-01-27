@@ -3,6 +3,7 @@ package com.bugmaker.apt.domain.forum;
 import com.bugmaker.apt.enums.member.Status;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.shared.BaseEntity;
+import io.jsonwebtoken.lang.Assert;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,6 +39,10 @@ public class Forum extends BaseEntity {
 
     private Long likeCount;
 
+    private Long favoriteCount;
+
+    private Long shareCount;
+
     private Long reportCount;
 
     @Enumerated(value = STRING)
@@ -55,6 +60,8 @@ public class Forum extends BaseEntity {
 
         forum.viewCount = 0L;
         forum.likeCount = 0L;
+        forum.favoriteCount = 0L;
+        forum.shareCount = 0L;
         forum.reportCount = 0L;
 
         return forum;
@@ -94,6 +101,15 @@ public class Forum extends BaseEntity {
             this.likeCount--;
         }
     }
+
+    public void increaseFavoriteCount() { this.favoriteCount++; }
+
+    public void decreaseFavoriteCount() {
+        Assert.state(this.favoriteCount > 0, "즐겨찾기는 음수가 될 수 없습니다.");
+        this.favoriteCount--;
+    }
+
+    public void increaseShareCount() { this.shareCount++; }
 
     public void increaseReportCount() {
         this.reportCount++;

@@ -2,8 +2,8 @@ package com.bugmaker.apt.domain.common;
 
 import com.bugmaker.apt.domain.shared.BaseEntity;
 import com.bugmaker.apt.enums.member.Status;
-import com.bugmaker.apt.enums.menu.MenuLevel;
-import com.bugmaker.apt.enums.menu.MenuType;
+import com.bugmaker.apt.enums.common.MenuLevel;
+import com.bugmaker.apt.enums.common.MenuType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;

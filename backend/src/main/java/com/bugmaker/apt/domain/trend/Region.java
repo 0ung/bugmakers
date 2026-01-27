@@ -1,7 +1,7 @@
 package com.bugmaker.apt.domain.trend;
 
 import com.bugmaker.apt.domain.shared.BaseEntity;
-import com.bugmaker.apt.enums.menu.MenuLevel;
+import com.bugmaker.apt.enums.common.MenuLevel;
 import jakarta.persistence.Entity;
 import lombok.*;
 import jakarta.persistence.*;
@@ -55,7 +55,7 @@ public class Region extends BaseEntity {
     @Column(nullable = false)
     @Comment("즐겨찾기 누적수")
     @Builder.Default
-    private Long favoritedCount = 0L;
+    private Long favoriteCount = 0L;
 
     @Column(nullable = false)
     @Comment("공유 누적수")
@@ -76,11 +76,11 @@ public class Region extends BaseEntity {
         }
     }
 
-    public void increaseFavoritedCount() { this.favoritedCount++; }
+    public void increaseFavoriteCount() { this.favoriteCount++; }
 
-    public void decreaseFavoritedCount() {
-        state(this.favoritedCount > 0, "즐겨찾기는 음수가 될 수 없습니다.");
-        this.favoritedCount--;
+    public void decreaseFavoriteCount() {
+        state(this.favoriteCount > 0, "즐겨찾기는 음수가 될 수 없습니다.");
+        this.favoriteCount--;
     }
 
     public void increaseShareCount() { this.shareCount++; }

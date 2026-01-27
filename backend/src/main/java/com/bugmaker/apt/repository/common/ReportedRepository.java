@@ -2,7 +2,7 @@ package com.bugmaker.apt.repository.common;
 
 import com.bugmaker.apt.domain.common.Reported;
 import com.bugmaker.apt.domain.member.Member;
-import com.bugmaker.apt.enums.report.ReportStatus;
+import com.bugmaker.apt.enums.common.ReportStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

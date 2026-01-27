@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 import MainLayout from "../../components/layouts/MainLayout";
+import { getUserWidgetStats, getUserActivities } from "../../utils/myPageApi";
+import type { UserStatsResponse } from "../../types/mypage";
 import { getMemberRoleDisplayName } from "../../types/member";
 import {
   DndContext,
@@ -18,8 +21,8 @@ type UserTab = "activity" | "favorites" | "regions" | "settings";
 // 위젯 타입 정의
 type WidgetType = 
   | "view_news" | "view_trend" | "view_forum"
-  | "my_heart_news" | "my_heart_forum" 
-  | "others_heart_news" | "others_heart_forum"
+  | "my_like_news" | "my_like_forum" 
+  | "others_like_news" | "others_like_forum"
   | "my_favorite" | "others_favorite"
   | "my_share" | "others_share"
   | "my_report" | "others_report";
@@ -32,15 +35,15 @@ interface Widget {
   color: string;
 }
 
-// 전체 위젯 목록 (13개)
-const ALL_WIDGETS: Widget[] = [
+// 전체 위젯 목록 (13개) - 초기값 0, API로 업데이트됨
+const getInitialWidgets = (): Widget[] => [
   { id: "view_news", title: "뉴스 조회수", icon: "👀", value: 0, color: "blue" },
   { id: "view_trend", title: "트렌드 조회수", icon: "📊", value: 0, color: "indigo" },
   { id: "view_forum", title: "포럼 조회수", icon: "💬", value: 0, color: "purple" },
-  { id: "my_heart_news", title: "내 좋아요 (뉴스)", icon: "❤️", value: 0, color: "red" },
-  { id: "my_heart_forum", title: "내 좋아요 (포럼)", icon: "💗", value: 0, color: "pink" },
-  { id: "others_heart_news", title: "받은 좋아요 (뉴스)", icon: "👍", value: 0, color: "green" },
-  { id: "others_heart_forum", title: "받은 좋아요 (포럼)", icon: "💚", value: 0, color: "teal" },
+  { id: "my_like_news", title: "내 좋아요 (뉴스)", icon: "❤️", value: 0, color: "red" },
+  { id: "my_like_forum", title: "내 좋아요 (포럼)", icon: "💗", value: 0, color: "pink" },
+  { id: "others_like_news", title: "받은 좋아요 (뉴스)", icon: "👍", value: 0, color: "green" },
+  { id: "others_like_forum", title: "받은 좋아요 (포럼)", icon: "💚", value: 0, color: "teal" },
   { id: "my_favorite", title: "내 즐겨찾기", icon: "⭐", value: 0, color: "yellow" },
   { id: "others_favorite", title: "받은 즐겨찾기", icon: "🌟", value: 0, color: "amber" },
   { id: "my_share", title: "내 공유", icon: "🔗", value: 0, color: "cyan" },
@@ -50,13 +53,13 @@ const ALL_WIDGETS: Widget[] = [
 ];
 
 // 기본 위젯 (4개)
-const DEFAULT_WIDGETS: WidgetType[] = ["view_news", "my_heart_news", "my_favorite", "my_share"];
+const DEFAULT_WIDGETS: WidgetType[] = ["view_news", "my_like_news", "my_favorite", "my_share"];
 
 // 내 활동 섹션 타입 (17개)
 type ActivitySection = 
   | "view_news" | "view_trend" | "view_forum"
-  | "my_heart_news" | "my_heart_forum"
-  | "others_heart_news" | "others_heart_forum"
+  | "my_like_news" | "my_like_forum"
+  | "others_like_news" | "others_like_forum"
   | "my_favorite" | "others_favorite"
   | "my_share" | "others_share"
   | "my_report"
@@ -77,10 +80,10 @@ const ALL_ACTIVITY_SECTIONS: ActivitySectionConfig[] = [
   { id: "view_news", title: "조회한 뉴스", icon: "👀", enabled: false },
   { id: "view_trend", title: "조회한 트렌드", icon: "📊", enabled: false },
   { id: "view_forum", title: "조회한 포럼", icon: "💬", enabled: false },
-  { id: "my_heart_news", title: "좋아요한 뉴스", icon: "❤️", enabled: false },
-  { id: "my_heart_forum", title: "좋아요한 포럼", icon: "💗", enabled: false },
-  { id: "others_heart_news", title: "받은 좋아요 (뉴스)", icon: "👍", enabled: false },
-  { id: "others_heart_forum", title: "받은 좋아요 (포럼)", icon: "💚", enabled: false },
+  { id: "my_like_news", title: "좋아요한 뉴스", icon: "❤️", enabled: false },
+  { id: "my_like_forum", title: "좋아요한 포럼", icon: "💗", enabled: false },
+  { id: "others_like_news", title: "받은 좋아요 (뉴스)", icon: "👍", enabled: false },
+  { id: "others_like_forum", title: "받은 좋아요 (포럼)", icon: "💚", enabled: false },
   { id: "my_favorite", title: "내 즐겨찾기", icon: "⭐", enabled: false },
   { id: "others_favorite", title: "받은 즐겨찾기", icon: "🌟", enabled: false },
   { id: "my_share", title: "내 공유", icon: "🔗", enabled: false },
@@ -100,6 +103,10 @@ export default function UserMyPage() {
   // 위젯 설정
   const [selectedWidgets, setSelectedWidgets] = useState<WidgetType[]>(DEFAULT_WIDGETS);
   
+  // 위젯 데이터 (API에서 가져온 실제 값)
+  const [allWidgets, setAllWidgets] = useState<Widget[]>(getInitialWidgets());
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  
   // 내 활동 섹션 설정
   const [activitySections, setActivitySections] = useState<ActivitySectionConfig[]>(ALL_ACTIVITY_SECTIONS);
 
@@ -108,6 +115,14 @@ export default function UserMyPage() {
 
   // 전체 활동 보기 - 선택된 섹션
   const [selectedAllActivitySection, setSelectedAllActivitySection] = useState<ActivitySection | null>(null);
+  
+  // 위젯 상세보기 핸들러
+  const handleViewWidgetDetails = (widgetId: WidgetType) => {
+    // 위젯 ID를 ActivitySection으로 매핑 (동일한 값)
+    setSelectedAllActivitySection(widgetId as ActivitySection);
+    setActiveTab("settings");
+    setSettingsTab("all");
+  };
 
   // localStorage에서 설정 로드
   useEffect(() => {
@@ -122,6 +137,46 @@ export default function UserMyPage() {
     }
   }, []);
 
+  // 위젯 통계 데이터 로드
+  useEffect(() => {
+    const loadWidgetStats = async () => {
+      if (!user) return;
+      
+      setIsLoadingStats(true);
+      try {
+        const stats: UserStatsResponse = await getUserWidgetStats();
+        
+        // API 응답을 위젯 데이터로 변환
+        const updatedWidgets = getInitialWidgets().map(widget => {
+          switch (widget.id) {
+            case "view_news": return { ...widget, value: stats.viewNewsCount };
+            case "view_trend": return { ...widget, value: stats.viewTrendCount };
+            case "view_forum": return { ...widget, value: stats.viewForumCount };
+            case "my_like_news": return { ...widget, value: stats.myLikeNewsCount };
+            case "my_like_forum": return { ...widget, value: stats.myLikeForumCount };
+            case "others_like_news": return { ...widget, value: stats.othersLikeNewsCount };
+            case "others_like_forum": return { ...widget, value: stats.othersLikeForumCount };
+            case "my_favorite": return { ...widget, value: stats.myFavoriteCount };
+            case "others_favorite": return { ...widget, value: stats.othersFavoriteCount };
+            case "my_share": return { ...widget, value: stats.myShareCount };
+            case "others_share": return { ...widget, value: stats.othersShareCount };
+            case "my_report": return { ...widget, value: stats.myReportCount };
+            case "others_report": return { ...widget, value: stats.othersReportCount };
+            default: return widget;
+          }
+        });
+        
+        setAllWidgets(updatedWidgets);
+      } catch (error) {
+        console.error("위젯 통계 로드 실패:", error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+    
+    loadWidgetStats();
+  }, [user]);
+
   // 설정 저장
   const saveWidgetSettings = (widgets: WidgetType[]) => {
     setSelectedWidgets(widgets);
@@ -135,9 +190,9 @@ export default function UserMyPage() {
 
   if (!user) return null;
 
-  // 선택된 위젯 데이터 가져오기
+  // 선택된 위젯 데이터 가져오기 (allWidgets에서 실제 값 사용)
   const displayWidgets = selectedWidgets
-    .map(id => ALL_WIDGETS.find(w => w.id === id))
+    .map(id => allWidgets.find(w => w.id === id))
     .filter((w): w is Widget => w !== undefined);
 
   return (
@@ -166,9 +221,18 @@ export default function UserMyPage() {
 
         {/* 위젯 (커스터마이징 가능한 4개 박스) */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {displayWidgets.map((widget) => (
-            <WidgetCard key={widget.id} widget={widget} />
-          ))}
+          {isLoadingStats ? (
+            Array(4).fill(0).map((_, idx) => (
+              <div key={idx} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+                <div className="h-4 bg-gray-200 rounded mb-3"></div>
+                <div className="h-8 bg-gray-300 rounded"></div>
+              </div>
+            ))
+          ) : (
+            displayWidgets.map((widget) => (
+              <WidgetCard key={widget.id} widget={widget} onViewDetails={handleViewWidgetDetails} />
+            ))
+          )}
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -233,6 +297,7 @@ export default function UserMyPage() {
                 saveActivitySettings={saveActivitySettings}
                 selectedAllActivitySection={selectedAllActivitySection}
                 setSelectedAllActivitySection={setSelectedAllActivitySection}
+                allWidgets={allWidgets}
               />
             )}
           </div>
@@ -243,7 +308,7 @@ export default function UserMyPage() {
 }
 
 // 위젯 카드 컴포넌트
-function WidgetCard({ widget }: { widget: Widget }) {
+function WidgetCard({ widget, onViewDetails }: { widget: Widget; onViewDetails: (widgetId: WidgetType) => void }) {
   const colorClasses: Record<string, string> = {
     blue: "text-blue-600",
     indigo: "text-indigo-600",
@@ -260,7 +325,10 @@ function WidgetCard({ widget }: { widget: Widget }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
+    <button
+      onClick={() => onViewDetails(widget.id)}
+      className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition text-left w-full hover:scale-105 cursor-pointer"
+    >
       <div className="flex items-center justify-between mb-3">
         <span className="text-gray-600 text-sm">{widget.title}</span>
         <span className="text-3xl">{widget.icon}</span>
@@ -268,7 +336,7 @@ function WidgetCard({ widget }: { widget: Widget }) {
       <div className={`text-3xl font-bold ${colorClasses[widget.color]}`}>
         {widget.value}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -312,10 +380,59 @@ function RegionsContent() {
   );
 }
 
-// 공통 활동 섹션 상세 (리스트 표시)
+// 공통 활동 섹션 상세 (리스트 표시) - API 연동
 function ActivitySectionDetail({ section }: { section: ActivitySectionConfig }) {
-  // TODO: API 연동으로 실제 데이터 불러오기
-  const mockData: any[] = [];
+  const navigate = useNavigate();
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        // API 호출 - section.id에 따라 적절한 엔드포인트 호출
+        const response = await getUserActivities(section.id, page, 20);
+        
+        if (page === 0) {
+          setData(response.content);
+        } else {
+          setData(prev => [...prev, ...response.content]);
+        }
+        
+        setHasMore(!response.last);
+      } catch (error) {
+        console.error(`${section.title} 데이터 로드 실패:`, error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [section.id, page]);
+
+  const loadMore = () => {
+    if (!isLoading && hasMore) {
+      setPage(prev => prev + 1);
+    }
+  };
+
+  // 아이템 클릭 핸들러 - 타입에 따라 다른 페이지로 이동
+  const handleItemClick = (item: any) => {
+    // 뉴스 관련 섹션
+    if (section.id.includes('news') || section.id === 'view_news') {
+      navigate(`/news/${item.id}`);
+    }
+    // 포럼 관련 섹션
+    else if (section.id.includes('forum') || section.id === 'view_forum' || section.id === 'my_posts' || section.id === 'my_comments' || section.id === 'others_comments' || section.id === 'debates') {
+      navigate(`/community/${item.id}`);
+    }
+    // 트렌드 관련 섹션
+    else if (section.id.includes('trend') || section.id === 'view_trend') {
+      navigate(`/trend/${item.id}`);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -324,22 +441,56 @@ function ActivitySectionDetail({ section }: { section: ActivitySectionConfig }) 
         <span>{section.title}</span>
       </h2>
 
-      {mockData.length === 0 ? (
+      {isLoading && page === 0 ? (
+        <div className="space-y-3">
+          {Array(3).fill(0).map((_, idx) => (
+            <div key={idx} className="p-4 border rounded-xl animate-pulse">
+              <div className="h-5 bg-gray-200 rounded mb-2 w-3/4"></div>
+              <div className="h-4 bg-gray-100 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      ) : data.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           데이터가 없습니다.
         </div>
       ) : (
-        <div className="space-y-3">
-          {mockData.map((item, index) => (
-            <div
-              key={index}
-              className="p-4 border rounded-xl hover:bg-gray-50 transition cursor-pointer"
+        <>
+          <div className="space-y-3">
+            {data.map((item, index) => (
+              <div
+                key={`${item.id}-${index}`}
+                onClick={() => handleItemClick(item)}
+                className="p-4 border rounded-xl hover:bg-blue-50 hover:border-blue-300 transition cursor-pointer"
+              >
+                <h3 className="font-semibold mb-2">{item.title}</h3>
+                {item.content && (
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{item.content}</p>
+                )}
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  {item.author && <span>👤 {item.author}</span>}
+                  {item.viewCount !== undefined && <span>👀 {item.viewCount}</span>}
+                  {item.likeCount !== undefined && <span>❤️ {item.likeCount}</span>}
+                  {item.commentCount !== undefined && <span>💬 {item.commentCount}</span>}
+                  {item.shareCount !== undefined && <span>🔗 {item.shareCount}</span>}
+                  {item.createdAt && (
+                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {hasMore && (
+            <button
+              onClick={loadMore}
+              disabled={isLoading}
+              className="w-full mt-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition disabled:opacity-50"
             >
-              <h3 className="font-semibold mb-2">{item.title}</h3>
-              <div className="text-sm text-gray-600">{item.description}</div>
-            </div>
-          ))}
-        </div>
+              {isLoading ? "로딩 중..." : "더 보기"}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
@@ -355,6 +506,7 @@ interface SettingsContentProps {
   saveActivitySettings: (sections: ActivitySectionConfig[]) => void;
   selectedAllActivitySection: ActivitySection | null;
   setSelectedAllActivitySection: (section: ActivitySection | null) => void;
+  allWidgets: Widget[];
 }
 
 function SettingsContent(props: SettingsContentProps) {
@@ -410,6 +562,7 @@ function SettingsContent(props: SettingsContentProps) {
           <AllActivityView
             selectedSection={props.selectedAllActivitySection}
             setSelectedSection={props.setSelectedAllActivitySection}
+            widgetStats={props.allWidgets}
           />
         )}
       </div>
@@ -427,6 +580,7 @@ function WidgetSettings({
 }) {
   const [tempWidgets, setTempWidgets] = useState<WidgetType[]>(selectedWidgets);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [allWidgets] = useState<Widget[]>(getInitialWidgets()); // 드래그용 초기 위젯
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -495,7 +649,7 @@ function WidgetSettings({
     alert("위젯 설정이 저장되었습니다!");
   };
 
-  const activeWidget = activeId ? ALL_WIDGETS.find(w => w.id === activeId) : null;
+  const activeWidget = activeId ? allWidgets.find(w => w.id === activeId) : null;
 
   return (
     <DndContext
@@ -518,7 +672,7 @@ function WidgetSettings({
             <WidgetSlot
               key={`slot-${slotIndex}`}
               id={`slot-${slotIndex}`}
-              widget={tempWidgets[slotIndex] ? ALL_WIDGETS.find(w => w.id === tempWidgets[slotIndex]) : undefined}
+              widget={tempWidgets[slotIndex] ? allWidgets.find(w => w.id === tempWidgets[slotIndex]) : undefined}
               onRemove={() => handleRemove(slotIndex)}
             />
           ))}
@@ -527,7 +681,7 @@ function WidgetSettings({
         {/* 전체 위젯 목록 */}
         <h4 className="font-semibold mb-3">위젯 목록 (드래그하여 위로 이동)</h4>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          {ALL_WIDGETS.map((widget) => (
+          {allWidgets.map((widget) => (
             <DraggableWidget key={widget.id} widget={widget} />
           ))}
         </div>
@@ -737,10 +891,18 @@ function ActivitySettings({
 function AllActivityView({
   selectedSection,
   setSelectedSection,
+  widgetStats,
 }: {
   selectedSection: ActivitySection | null;
   setSelectedSection: (section: ActivitySection | null) => void;
+  widgetStats: Widget[];
 }) {
+  // 각 섹션의 카운트를 위젯 데이터에서 가져오기
+  const getCountForSection = (sectionId: ActivitySection): number => {
+    const widget = widgetStats.find(w => w.id === sectionId);
+    return widget?.value || 0;
+  };
+
   if (selectedSection) {
     const section = ALL_ACTIVITY_SECTIONS.find(s => s.id === selectedSection);
     if (!section) return null;
@@ -773,7 +935,9 @@ function AllActivityView({
               <span className="font-medium">{section.title}</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xl font-bold text-blue-600">0</span>
+              <span className="text-xl font-bold text-blue-600">
+                {getCountForSection(section.id)}
+              </span>
               <span className="text-gray-400">→</span>
             </div>
           </button>
