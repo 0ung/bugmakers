@@ -50,7 +50,7 @@ public class SecurityConfig {
                 // 요청 권한 설정
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/oauth2/**", "/error", "/*.html", "/*.css", "/*.js"
-                                , "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                                , "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/mcp/digest/**").permitAll()
                         .requestMatchers("/api/news/**").permitAll()
 //                        .anyRequest().permitAll())  // 임시로 모두 허용 (개발단계)
                         .anyRequest().authenticated())  // 나머지는 인증 필요

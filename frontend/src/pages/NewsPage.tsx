@@ -1,17 +1,18 @@
-import {useEffect, useRef, useState, useCallback} from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/layouts/MainLayout";
+import NewsDigestSection from "../components/NewsDigestSection";
 import { api } from "../utils/axios";
-import type {NewsItem, NewsPageResponse, NewsUIItem} from "../types/news.ts";
+import type { NewsItem, NewsPageResponse, NewsUIItem } from "../types/news.ts";
 import { ApiError, ErrorCode } from "../types/error";
 import { getNewsImage } from "../utils/newsImageUtils";
 
 // Debounce 함수
 function debounce<T extends (...args: any[]) => any>(
-    func: T,
-    wait: number
+  func: T,
+  wait: number,
 ): (...args: Parameters<T>) => void {
-  let timeout: number; // NodeJS.Timeout → number
+  let timeout: number;
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -32,32 +33,32 @@ export default function NewsPage() {
   const [categories, setCategories] = useState<string[]>([]);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const isMounted = useRef(false); // React Strict Mode 대응
+  const isMounted = useRef(false);
 
   // 카테고리 목록 불러오기
   const fetchCategories = async () => {
     try {
-      const response = await api.get<string[]>('/api/news/categories');
+      const response = await api.get<string[]>("/api/news/categories");
       setCategories(["전체", ...response.data]);
     } catch (error) {
-      console.error('카테고리 목록 불러오기 실패:', error);
+      console.error("카테고리 목록 불러오기 실패:", error);
       setCategories(["전체"]);
     }
   };
 
-  // 즐겨찾기 상태 로드 (로그인 사용자만)
+  // 즐겨찾기 상태 로드
   const loadFavorites = async (newsIds: number[]): Promise<Set<number>> => {
     try {
-      // 각 뉴스별 즐겨찾기 여부 확인
-      const promises = newsIds.map(id => 
-        api.get<boolean>(`/api/news/${id}/favorite/me`)
-          .then(res => ({ id, isFavorited: res.data }))
-          .catch(() => ({ id, isFavorited: false })) // 에러는 무시 (비로그인)
+      const promises = newsIds.map((id) =>
+        api
+          .get<boolean>(`/api/news/${id}/favorite/me`)
+          .then((res) => ({ id, isFavorited: res.data }))
+          .catch(() => ({ id, isFavorited: false })),
       );
 
       const results = await Promise.all(promises);
       const newFavorites = new Set<number>();
-      
+
       results.forEach(({ id, isFavorited }) => {
         if (isFavorited) {
           newFavorites.add(id);
@@ -66,127 +67,116 @@ export default function NewsPage() {
 
       return newFavorites;
     } catch (error) {
-      console.error('즐겨찾기 상태 로드 실패:', error);
+      console.error("즐겨찾기 상태 로드 실패:", error);
       return new Set<number>();
     }
   };
 
-  // 뉴스 목록 불러오기 (서버에서 필터링)
+  // 뉴스 목록 불러오기
   const fetchNews = async (
     pageNumber: number,
     tag: string,
     keyword: string,
-    append: boolean = true
+    append: boolean = true,
   ) => {
     if (loading) return;
 
     try {
       setLoading(true);
-      
-      const params: any = { 
-        page: pageNumber, 
-        size: 12 
+
+      const params: any = {
+        page: pageNumber,
+        size: 12,
       };
 
-      // "전체"가 아닌 태그만 파라미터로 전달
       if (tag !== "전체") {
         params.tag = tag;
       }
-      
-      // 검색어가 있으면 추가
+
       if (keyword && keyword.trim() !== "") {
         params.keyword = keyword.trim();
       }
 
-      const response = await api.get<NewsPageResponse>('/api/news', { params });
+      const response = await api.get<NewsPageResponse>("/api/news", { params });
 
-      // API 데이터를 UI 형식으로 변환
-      const formattedNews: NewsUIItem[] = response.data.content.map((news: NewsItem) => {
-        // 제목에서 [카테고리] 태그 제거
-        const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
+      const formattedNews: NewsUIItem[] = response.data.content.map(
+        (news: NewsItem) => {
+          const titleWithoutCategory = news.title.replace(/^\[[^\]]+\]\s*/, "");
 
-        // 🎨 이미지: DB 이미지 or 기본 이미지
-        const image = getNewsImage(
-          news.category,
-          titleWithoutCategory,
-          "",  // 목록에는 content 없음
-          news.thumbnailUrl,
-          news.id
-        );
+          const image = getNewsImage(
+            news.category,
+            titleWithoutCategory,
+            "",
+            news.thumbnailUrl,
+            news.id,
+          );
 
-        return {
-          id: news.id,
-          category: news.displayName,  // 한글로 표시
-          title: titleWithoutCategory,
-          description: "",
-          date: new Date(news.createdDate).toLocaleDateString('ko-KR'),
-          image
-        };
-      });
+          return {
+            id: news.id,
+            category: news.displayName,
+            title: titleWithoutCategory,
+            description: "",
+            date: new Date(news.createdDate).toLocaleDateString("ko-KR"),
+            image,
+          };
+        },
+      );
 
-      // 새로 로드한 뉴스들의 즐겨찾기 상태 확인
-      const newsIds = formattedNews.map(news => news.id);
+      const newsIds = formattedNews.map((news) => news.id);
       const newFavorites = await loadFavorites(newsIds);
 
-      // append가 true면 기존 목록에 추가, false면 새로 시작
-      setNewsList(prev => append ? [...prev, ...formattedNews] : formattedNews);
-      setFavorites(prev => {
+      setNewsList((prev) =>
+        append ? [...prev, ...formattedNews] : formattedNews,
+      );
+      setFavorites((prev) => {
         const merged = new Set(prev);
-        newFavorites.forEach(id => merged.add(id));
+        newFavorites.forEach((id) => merged.add(id));
         return merged;
       });
 
       setHasMore(response.data.number + 1 < response.data.totalPages);
-      setPage(prev => prev + 1);
-      // setPage(response.data.number + 1);
+      setPage((prev) => prev + 1);
     } catch (error) {
-      console.error('뉴스 불러오기 실패:', error);
+      console.error("뉴스 불러오기 실패:", error);
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
   };
 
-  // Debounced 검색 함수 (500ms 대기)
-  /* : FRONT(스크롤 내리기 전 12개를 실시간 검색 진행) + BACK(5초후 API로 전체 검색 진행 하여 자연스럽게 실시간 검색처럼 보이게함)  */
   const debouncedFetchNews = useCallback(
     debounce((tag: string, keyword: string) => {
-      // 검색어/태그 변경 시 목록 초기화하고 첫 페이지부터 시작
       setNewsList([]);
       setPage(0);
       setHasMore(true);
       fetchNews(0, tag, keyword, false);
     }, 500),
-    []
+    [],
   );
 
-  // 최초 로딩 (React Strict Mode 대응)
   useEffect(() => {
     if (isMounted.current) return;
     isMounted.current = true;
-    
+
     fetchCategories();
     fetchNews(0, "전체", "", false);
   }, []);
 
-  // 카테고리 변경 시 즉시 검색
   useEffect(() => {
     if (!isMounted.current) return;
-    
+
     setNewsList([]);
     setPage(0);
     setHasMore(true);
     fetchNews(0, selectedCategory, searchKeyword, false);
   }, [selectedCategory]);
 
-  // 검색어 변경 시 debounced 검색
   useEffect(() => {
     if (!isMounted.current) return;
-    
+
     debouncedFetchNews(selectedCategory, searchKeyword);
   }, [searchKeyword]);
 
-  // 무한 스크롤 감지
   useEffect(() => {
     if (!bottomRef.current || !hasMore || loading) return;
 
@@ -196,29 +186,25 @@ export default function NewsPage() {
           fetchNews(page, selectedCategory, searchKeyword, true);
         }
       },
-      { threshold: 1 }
+      { threshold: 1 },
     );
 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
   }, [page, hasMore, loading, selectedCategory, searchKeyword]);
 
-  // 카테고리 선택
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
   };
 
-  // 검색어 입력
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchKeyword(e.target.value);
   };
 
-  // 검색 초기화
   const handleSearchClear = () => {
     setSearchKeyword("");
   };
 
-  // 즐겨찾기 토글
   const toggleFavorite = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
 
@@ -226,17 +212,15 @@ export default function NewsPage() {
 
     try {
       if (isFavorited) {
-        // 즐겨찾기 취소
         await api.delete(`/api/news/${id}/favorite`);
-        setFavorites(prev => {
+        setFavorites((prev) => {
           const newSet = new Set(prev);
           newSet.delete(id);
           return newSet;
         });
       } else {
-        // 즐겨찾기 추가
         await api.post(`/api/news/${id}/favorite`);
-        setFavorites(prev => new Set(prev).add(id));
+        setFavorites((prev) => new Set(prev).add(id));
       }
     } catch (error) {
       if (!(error instanceof ApiError)) {
@@ -249,10 +233,10 @@ export default function NewsPage() {
         navigate("/login");
       } else if (error.is(ErrorCode.ALREADY_FAVORITED)) {
         alert(error.message);
-        setFavorites(prev => new Set(prev).add(id));
+        setFavorites((prev) => new Set(prev).add(id));
       } else if (error.is(ErrorCode.NOT_FAVORITED_YET)) {
         alert(error.message);
-        setFavorites(prev => {
+        setFavorites((prev) => {
           const newSet = new Set(prev);
           newSet.delete(id);
           return newSet;
@@ -265,7 +249,6 @@ export default function NewsPage() {
     }
   };
 
-  // 초기 로딩 중
   if (initialLoading) {
     return (
       <MainLayout>
@@ -276,7 +259,6 @@ export default function NewsPage() {
     );
   }
 
-  // UI
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto">
@@ -285,9 +267,16 @@ export default function NewsPage() {
           홈 &gt; <span className="font-medium">부동산뉴스</span>
         </nav>
 
+        {/* AI 뉴스 요약 섹션 */}
+        <div className="mb-12">
+          <NewsDigestSection />
+        </div>
+
+        {/* 구분선 */}
+        <div className="border-t-2 border-gray-200 my-12"></div>
+
         {/* 카테고리 탭 + 검색바 */}
         <div className="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* 카테고리 탭 */}
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <button
@@ -296,9 +285,10 @@ export default function NewsPage() {
                 className={`
                   px-6 py-2.5 rounded-full font-medium text-sm
                   transition-all duration-200
-                  ${selectedCategory === category
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-200"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ${
+                    selectedCategory === category
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }
                 `}
               >
@@ -307,7 +297,6 @@ export default function NewsPage() {
             ))}
           </div>
 
-          {/* 검색바 */}
           <div className="relative">
             <input
               type="text"
@@ -321,7 +310,6 @@ export default function NewsPage() {
                 transition-all duration-200
               "
             />
-            {/* 돋보기 아이콘 */}
             <svg
               className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
               fill="none"
@@ -335,7 +323,6 @@ export default function NewsPage() {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            {/* X 버튼 */}
             {searchKeyword && (
               <button
                 onClick={handleSearchClear}
@@ -363,10 +350,9 @@ export default function NewsPage() {
         {newsList.length === 0 && !loading ? (
           <div className="text-center py-20">
             <div className="text-gray-500">
-              {searchKeyword 
+              {searchKeyword
                 ? `'${searchKeyword}'에 대한 검색 결과가 없습니다.`
-                : `'${selectedCategory}' 카테고리에 해당하는 뉴스가 없습니다.`
-              }
+                : `'${selectedCategory}' 카테고리에 해당하는 뉴스가 없습니다.`}
             </div>
           </div>
         ) : (
