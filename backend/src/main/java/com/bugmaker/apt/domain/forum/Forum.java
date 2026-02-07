@@ -1,8 +1,9 @@
 package com.bugmaker.apt.domain.forum;
 
-import com.bugmaker.apt.constants.Status;
+import com.bugmaker.apt.enums.member.Status;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.domain.shared.BaseEntity;
+import io.jsonwebtoken.lang.Assert;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,12 +32,19 @@ public class Forum extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
+    @OneToMany(mappedBy = "forum", cascade = CascadeType.ALL)
+    private List<Vote> voteList = new ArrayList<>();
+
     @OneToMany(mappedBy = "forum")
     private List<ForumTagRelation> forumTagRelationList = new ArrayList<>();
 
     private Long viewCount;
 
-    private Long heartCount;
+    private Long likeCount;
+
+    private Long favoriteCount;
+
+    private Long shareCount;
 
     private Long reportCount;
 
@@ -54,7 +62,9 @@ public class Forum extends BaseEntity {
         forum.member = member;
 
         forum.viewCount = 0L;
-        forum.heartCount = 0L;
+        forum.likeCount = 0L;
+        forum.favoriteCount = 0L;
+        forum.shareCount = 0L;
         forum.reportCount = 0L;
 
         return forum;
@@ -84,19 +94,33 @@ public class Forum extends BaseEntity {
         this.viewCount++;
     }
 
-    public void increaseHeartCount() {
-        this.heartCount++;
+    public void increaseLikeCount() {
+        this.likeCount++;
     }
 
-    public void decreaseHeartCount() {
-        state(this.heartCount > 0 ,"좋아요 누적수는 마이너스가 될 수 없습니다.");
-        if (this.heartCount > 0) {
-            this.heartCount--;
+    public void decreaseLikeCount() {
+        state(this.likeCount > 0 ,"좋아요 누적수는 마이너스가 될 수 없습니다.");
+        if (this.likeCount > 0) {
+            this.likeCount--;
         }
     }
 
+    public void increaseFavoriteCount() { this.favoriteCount++; }
+
+    public void decreaseFavoriteCount() {
+        Assert.state(this.favoriteCount > 0, "즐겨찾기는 음수가 될 수 없습니다.");
+        this.favoriteCount--;
+    }
+
+    public void increaseShareCount() { this.shareCount++; }
+
     public void increaseReportCount() {
         this.reportCount++;
+    }
+
+    public void addVoteContent(Vote vote) {
+        this.voteList.add(vote);
+        vote.setForum(this);
     }
 
 }

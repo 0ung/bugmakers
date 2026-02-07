@@ -2,14 +2,11 @@ package com.bugmaker.apt.service.forum;
 
 import com.bugmaker.apt.common.exception.errorcode.ErrorCode;
 import com.bugmaker.apt.common.exception.custom.IncludeImproperWordsException;
-import com.bugmaker.apt.domain.forum.Forum;
-import com.bugmaker.apt.domain.forum.ForumCreateRequest;
-import com.bugmaker.apt.domain.forum.ForumDeleteRequest;
-import com.bugmaker.apt.domain.forum.ForumUpdateRequest;
+import com.bugmaker.apt.domain.forum.*;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.dto.common.SliceResponse;
 import com.bugmaker.apt.dto.forum.ForumListDto;
-import com.bugmaker.apt.repository.ForumRepository;
+import com.bugmaker.apt.repository.forum.ForumRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -35,7 +32,7 @@ public class ForumService {
                         forum.getContent(),
                         forum.getMember().getNickname(),
                         forum.getViewCount(),
-                        forum.getHeartCount(),
+                        forum.getLikeCount(),
                         forum.getReportCount(),
                         forum.getCreatedDate(),
                         forum.getLastModifiedDate()
@@ -49,6 +46,9 @@ public class ForumService {
         checkCurse(createRequest.title(), createRequest.content());
 
         Forum forum  = Forum.postUp(createRequest, member);
+
+        createRequest.voteList()
+                .forEach(vote -> forum.addVoteContent(Vote.create(vote.name())));
 
         return forumRepository.save(forum);
     }

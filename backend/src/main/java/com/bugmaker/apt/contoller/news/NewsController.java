@@ -193,7 +193,7 @@ public class NewsController {
      * 좋아요 여부 확인
      * JWT 인증 필요
      * 
-     * GET /api/news/{id}/heart/me
+     * GET /api/news/{id}/like/me
      * 
      * @param id 뉴스 ID
      * @param member 현재 로그인한 회원 정보
@@ -208,7 +208,7 @@ public class NewsController {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    @GetMapping("/{id}/heart/me")
+    @GetMapping("/{id}/like/me")
     public ResponseEntity<Boolean> checkLikedByMe(
             @Parameter(description = "뉴스 ID") @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal Member member
@@ -225,10 +225,10 @@ public class NewsController {
     }
 
     /**
-     * 좋아요 증가 (Heart Count 증가)
+     * 좋아요 증가 (Like Count 증가)
      * JWT 인증 필요
      * 
-     * POST /api/news/{id}/heart
+     * POST /api/news/{id}/like
      * 
      * @param id 뉴스 ID
      * @param member 현재 로그인한 회원 정보
@@ -245,22 +245,22 @@ public class NewsController {
             @ApiResponse(responseCode = "404", description = "뉴스를 찾을 수 없음"),
             @ApiResponse(responseCode = "409", description = "이미 좋아요를 누른 뉴스")
     })
-    @PostMapping("/{id}/heart")
-    public ResponseEntity<Void> increaseHeartCount(
+    @PostMapping("/{id}/like")
+    public ResponseEntity<Void> increaseLikeCount(
             @Parameter(description = "뉴스 ID") @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal Member member
     ) {
         log.info("좋아요 증가 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
         
-        newsService.increaseHeartCount(member.getId(), id);
+        newsService.increaseLikeCount(member.getId(), id);
         return ResponseEntity.ok().build();
     }
 
     /**
-     * 좋아요 취소 (Heart Count 감소)
+     * 좋아요 취소 (Like Count 감소)
      * JWT 인증 필요
      * 
-     * DELETE /api/news/{id}/heart
+     * DELETE /api/news/{id}/like
      * 
      * @param id 뉴스 ID
      * @param member 현재 로그인한 회원 정보
@@ -276,14 +276,14 @@ public class NewsController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "404", description = "뉴스를 찾을 수 없음 또는 좋아요를 누르지 않은 뉴스")
     })
-    @DeleteMapping("/{id}/heart")
-    public ResponseEntity<Void> decreaseHeartCount(
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<Void> decreaseLikeCount(
             @Parameter(description = "뉴스 ID") @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal Member member
     ) {
         log.info("좋아요 취소 - 뉴스 ID: {}, 회원 ID: {}", id, member.getId());
         
-        newsService.decreaseHeartCount(member.getId(), id);
+        newsService.decreaseLikeCount(member.getId(), id);
         return ResponseEntity.ok().build();
     }
 

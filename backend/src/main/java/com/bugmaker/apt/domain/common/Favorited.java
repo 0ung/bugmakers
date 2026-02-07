@@ -1,12 +1,13 @@
 package com.bugmaker.apt.domain.common;
 
+import com.bugmaker.apt.domain.forum.Forum;
+import com.bugmaker.apt.domain.member.Member;
+import com.bugmaker.apt.domain.news.News;
+import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -27,55 +28,46 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Comment("즐겨찾기 마스터 테이블")
-public class Favorited {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Comment("즐겨찾기 ID")
-    private Long id;
+@Comment("즐겨찾기 테이블")
+public class Favorited extends BaseEntity {
 
-    @Column(name = "member_id", nullable = false)
+    /* 즐겨찾기 주체 */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
     @Comment("회원 ID")
-    private Long memberId;
+    private Member member;
 
-    @Column(name = "news_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "news_id")
     @Comment("뉴스 ID")
-    private Long newsId;
+    private News news;
 
-    @Column(name = "forum_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forum_id")
     @Comment("토론 ID")
-    private Long forumId;
+    private Forum forum;
 
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    @Comment("생성일")
-    private LocalDateTime createdDate;
-
-    /** 뉴스 즐겨찾기 생성 */
-    public static Favorited forNews(Long memberId, Long newsId) {
+    /* 생성 팩토리 */
+    public static Favorited forNews(Member member, News news) {
         return Favorited.builder()
-                .memberId(memberId)
-                .newsId(newsId)
-                .forumId(null)
+                .member(member)
+                .news(news)
                 .build();
     }
 
-    /** 토론 즐겨찾기 생성 */
-    public static Favorited forForum(Long memberId, Long forumId) {
+    public static Favorited forForum(Member member, Forum forum) {
         return Favorited.builder()
-                .memberId(memberId)
-                .forumId(forumId)
-                .newsId(null)
+                .member(member)
+                .forum(forum)
                 .build();
     }
 
-    /** 뉴스 즐겨찾기 여부 확인 */
+    /* 타입 판별 (즐겨찾기 여부 확인) */
     public boolean isNewsFavorite() {
-        return newsId != null;
+        return news != null;
     }
 
-    /** 토론 즐겨찾기 여부 확인 */
     public boolean isForumFavorite() {
-        return forumId != null;
+        return forum != null;
     }
 }

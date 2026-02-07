@@ -16,7 +16,7 @@ export default function NewsDetailPage() {
   // UI 상태
   const [isLiked, setIsLiked] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [heartCount, setHeartCount] = useState(0);
+  const [likeCount, setLikeCount] = useState(0);
   const [shareCount, setShareCount] = useState(0);
 
   // 뉴스 상세 조회 및 상태 확인
@@ -30,7 +30,7 @@ export default function NewsDetailPage() {
         // 1. 뉴스 상세 조회
         const response = await api.get<NewsDetail>(`/api/news/${id}`);
         setNews(response.data);
-        setHeartCount(response.data.heartCount);
+        setLikeCount(response.data.likeCount);
         setShareCount(response.data.shareCount);
         
         // 2. 조회수 증가 API 호출 (실패해도 무시)
@@ -38,7 +38,7 @@ export default function NewsDetailPage() {
 
         // 3. 좋아요 여부 확인 (로그인 상태에서만)
         try {
-          const likedResponse = await api.get<boolean>(`/api/news/${id}/heart/me`);
+          const likedResponse = await api.get<boolean>(`/api/news/${id}/like/me`);
           setIsLiked(likedResponse.data);
         } catch (error) {
           // 비로그인(401) 에러는 무시
@@ -78,13 +78,13 @@ export default function NewsDetailPage() {
     try {
       if (isLiked) {
         // 좋아요 취소
-        await api.delete(`/api/news/${id}/heart`);
-        setHeartCount(prev => Math.max(0, prev - 1));
+        await api.delete(`/api/news/${id}/like`);
+        setLikeCount(prev => Math.max(0, prev - 1));
         setIsLiked(false);
       } else {
         // 좋아요 추가
-        await api.post(`/api/news/${id}/heart`);
-        setHeartCount(prev => prev + 1);
+        await api.post(`/api/news/${id}/like`);
+        setLikeCount(prev => prev + 1);
         setIsLiked(true);
       }
     } catch (error) {
@@ -296,7 +296,7 @@ export default function NewsDetailPage() {
           >
             <span>{isLiked ? "❤️" : "🤍"}</span>
             <span className="font-medium text-gray-700">
-              좋아요 {heartCount}
+              좋아요 {likeCount}
             </span>
           </button>
 

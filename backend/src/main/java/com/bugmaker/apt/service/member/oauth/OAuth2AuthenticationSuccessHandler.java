@@ -3,7 +3,7 @@ package com.bugmaker.apt.service.member.oauth;
 import com.bugmaker.apt.common.util.JwtUtil;
 import com.bugmaker.apt.domain.member.Member;
 import com.bugmaker.apt.dto.member.oauth.CustomOAuth2User;
-import com.bugmaker.apt.repository.MemberRepository;
+import com.bugmaker.apt.repository.member.MemberRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
