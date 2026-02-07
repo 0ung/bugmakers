@@ -22,6 +22,12 @@ ENV GRPC_SERVER=""
 ENV NEWS_CRAWLER_API_KEY=""
 ENV LOG_LEVEL=INFO
 
+# proto 컴파일 (빌드 시 backend proto가 있어야 함)
+# generate_proto.py 실행은 나중에...
+# 일단 protos 디렉토리만 생성
+RUN mkdir -p /app/protos && \
+    echo '"""gRPC Proto generated files"""' > /app/protos/__init__.py
+
 # cron 작업 설정 (매일 00:00 실행)
 RUN echo "0 0 * * * cd /app && /usr/local/bin/python /app/crawler.py >> /var/log/cron.log 2>&1" > /etc/cron.d/crawler-cron && \
     chmod 0644 /etc/cron.d/crawler-cron && \
@@ -36,7 +42,7 @@ set -e
 # 환경변수를 cron에 전달
 env | grep -E 'GRPC_SERVER|NEWS_CRAWLER_API_KEY|LOG_LEVEL' > /etc/environment
 
-# 초기 실행 (옵션)
+# 초기 실행
 echo "Initial crawler run..."
 python /app/crawler.py
 
