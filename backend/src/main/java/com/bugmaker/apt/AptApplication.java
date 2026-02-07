@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaAuditing
 @EnableScheduling
 public class AptApplication {
-	//테스트
+
 	public static void main(String[] args) {
 		SpringApplication.run(AptApplication.class, args);
 	}
