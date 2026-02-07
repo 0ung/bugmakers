@@ -34,3 +34,5 @@ ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --spring.profiles.active=$
 
 # 내부 포트는 항상 8080 (호스트 포트는 Actions에서 결정)
 EXPOSE 8080
+# gRPC 포트
+EXPOSE 9090

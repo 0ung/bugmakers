@@ -25,11 +25,11 @@ jobs:
           if [ "${GITHUB_REF_NAME}" = "dev" ]; then
             echo "APP_ENV=dev" >> $GITHUB_ENV
             echo "CONTAINER_NAME=news-crawler-dev" >> $GITHUB_ENV
-            echo "GRPC_SERVER=backend-dev:50051" >> $GITHUB_ENV
+            echo "GRPC_SERVER=backend-dev:9090" >> $GITHUB_ENV
           else
             echo "APP_ENV=prod" >> $GITHUB_ENV
             echo "CONTAINER_NAME=news-crawler-prod" >> $GITHUB_ENV
-            echo "GRPC_SERVER=backend-prod:50051" >> $GITHUB_ENV
+            echo "GRPC_SERVER=backend-prod:9090" >> $GITHUB_ENV
           fi
 
           echo "===== BRANCH CONFIG ====="
