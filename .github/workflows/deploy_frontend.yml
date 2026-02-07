@@ -19,7 +19,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # === Branch 기반 profile, port, container, nginx, log 경로 자동 설정 ===
       - name: Set environment by branch
         id: env-branch
         run: |
@@ -35,7 +34,7 @@ jobs:
             echo "APP_PROFILE=prod" >> $GITHUB_ENV
             echo "APP_PORT=101" >> $GITHUB_ENV
             echo "CONTAINER_NAME=frontend-prod" >> $GITHUB_ENV
-            echo "NGINX_CONF=/home/ubuntu/nginx/prod/nginx.conf" >> $GITHUB_ENVd
+            echo "NGINX_CONF=/home/ubuntu/nginx/prod/nginx.conf" >> $GITHUB_ENV
             echo "LOG_DIR=/home/ubuntu/app/frontend/prod/logs" >> $GITHUB_ENV
           fi
 
@@ -85,7 +84,6 @@ jobs:
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           NGINX_CONF: ${{ env.NGINX_CONF }}
           LOG_DIR: ${{ env.LOG_DIR }}
-
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -104,7 +102,6 @@ jobs:
 
             docker network create dev-net || true
 
-            # 로그 디렉토리 생성
             mkdir -p $LOG_DIR
 
             docker run -d \

@@ -66,17 +66,10 @@ class NewsCrawler:
         self.rss_sources = self.config.get('rss_sources', [])
         self.request_delay = self.config.get('crawler', {}).get('request_delay', 1)
 
-        # Backend URL
-        base_url = os.getenv('BASE_URL', 'http://localhost:9090')
-
-        # Docker 환경 자동 감지
-        if 'localhost' in base_url or '127.0.0.1' in base_url:
-            if os.path.exists('/.dockerenv'):
-                base_url = base_url.replace('localhost', 'host.docker.internal')
-                base_url = base_url.replace('127.0.0.1', 'host.docker.internal')
-                logger.info("🐳 Docker 환경 감지 - host.docker.internal 사용")
-
-        self.backend_url = base_url
+        # gRPC Server URL (Docker 네트워크 내부 통신)
+        self.backend_url = os.getenv('GRPC_SERVER', 'localhost:50051')
+        
+        logger.info(f"🔗 gRPC 서버: {self.backend_url}")
         self.api_key = os.getenv('NEWS_CRAWLER_API_KEY', '')
 
         if not self.api_key:
@@ -85,7 +78,7 @@ class NewsCrawler:
         # gRPC 클라이언트 초기화
         self._init_grpc_client()
 
-        logger.info(f"크롤러 초기화 완료 - Backend: {self.backend_url}")
+        logger.info(f"크롤러 초기화 완료")
         logger.info(f"활성 RSS 출처: {len([s for s in self.rss_sources if s.get('enabled', True)])}개")
 
     def _load_env(self):
