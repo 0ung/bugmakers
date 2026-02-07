@@ -15,6 +15,7 @@ import org.hibernate.annotations.Comment;
 @AllArgsConstructor
 @Builder
 @Comment("투표 마스터 테이블")
+//테스트
 public class Vote {
 
     @Id
