@@ -67,7 +67,7 @@ class NewsCrawler:
         self.request_delay = self.config.get('crawler', {}).get('request_delay', 1)
 
         # gRPC Server URL (Docker 네트워크 내부 통신)
-        self.backend_url = os.getenv('GRPC_SERVER', 'localhost:50051')
+        self.backend_url = os.getenv('GRPC_SERVER', 'localhost:9090')
         
         logger.info(f"🔗 gRPC 서버: {self.backend_url}")
         self.api_key = os.getenv('NEWS_CRAWLER_API_KEY', '')
