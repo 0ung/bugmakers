@@ -12,7 +12,7 @@ on:
 
 jobs:
   build_and_deploy:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -69,6 +69,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 60s
           envs: IMAGE_FULL,APP_ENV,CONTAINER_NAME,GRPC_SERVER,API_KEY
           script: |
             echo "Deploying image: $IMAGE_FULL"
