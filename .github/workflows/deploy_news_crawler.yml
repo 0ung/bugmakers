@@ -64,11 +64,12 @@ jobs:
           APP_ENV: ${{ env.APP_ENV }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           GRPC_SERVER: ${{ env.GRPC_SERVER }}
+          API_KEY: ${{ secrets.NEWS_CRAWLER_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_FULL,APP_ENV,CONTAINER_NAME,GRPC_SERVER
+          envs: IMAGE_FULL,APP_ENV,CONTAINER_NAME,GRPC_SERVER,API_KEY
           script: |
             echo "Deploying image: $IMAGE_FULL"
             echo "Env: $APP_ENV"
@@ -87,7 +88,7 @@ jobs:
               --network dev-net \
               --restart always \
               -e ENVIRONMENT=$APP_ENV \
-              -e NEWS_CRAWLER_API_KEY="${{ secrets.NEWS_CRAWLER_API_KEY }}" \
+              -e NEWS_CRAWLER_API_KEY="$API_KEY" \
               -e GRPC_SERVER=$GRPC_SERVER \
               $IMAGE_FULL
 
