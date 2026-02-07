@@ -38,6 +38,7 @@ import java.util.List;
 public class NewsController {
 
     private final NewsService newsService;
+    private final com.bugmaker.apt.service.news.NewsDigestService newsDigestService;
 
     @Value("${news.crawler.api-key}")
     private String crawlerApiKey;
@@ -415,7 +416,7 @@ public class NewsController {
         return ResponseEntity.ok(categories);
     }
 
-    /** 용 중인 카테고리 조회 (DB에 실제로 뉴스가 있는 카테고리만) */
+    /** 사용 중인 카테고리 조회 (DB에 실제로 뉴스가 있는 카테고리만) */
     @Operation(summary = "사용 중인 카테고리 조회", description = "DB에 실제로 뉴스가 저장된 카테고리만 조회합니다.")
     @GetMapping("/categories/existing")
     public ResponseEntity<List<String>> getExistingNewsCategories() {
@@ -423,5 +424,19 @@ public class NewsController {
 
         List<String> categories = newsService.getExistingCategories();
         return ResponseEntity.ok(categories);
+    }
+
+    /**
+     * 특정 날짜의 모든 다이제스트 조회 (프론트엔드용)
+     * GET /api/news/digest/date/{date}
+     */
+    @Operation(summary = "날짜별 다이제스트 조회", description = "특정 날짜의 모든 카테고리 뉴스 요약을 조회합니다.")
+    @GetMapping("/digest/date/{date}")
+    public ResponseEntity<List<com.bugmaker.apt.domain.news.DigestResponse>> getDigestsByDate(
+            @Parameter(description = "날짜 (YYYY-MM-DD)") @PathVariable String date) {
+        log.info("다이제스트 조회 - 날짜: {}", date);
+        
+        List<com.bugmaker.apt.domain.news.DigestResponse> digests = newsDigestService.getDigestsByDate(date);
+        return ResponseEntity.ok(digests);
     }
 }

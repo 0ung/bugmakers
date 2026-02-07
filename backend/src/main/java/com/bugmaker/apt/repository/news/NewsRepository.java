@@ -63,6 +63,24 @@ public interface NewsRepository extends JpaRepository<News, Long> {
     @Query("SELECT DISTINCT n.category FROM News n WHERE n.category IS NOT NULL ORDER BY n.category")
     List<NewsCategory> findDistinctCategories();
 
+    /**
+     * 특정 날짜에 생성된 뉴스 목록 조회 (MCP용)
+     */
+    @Query("SELECT n FROM News n WHERE CAST(n.createdDate AS date) = :date ORDER BY n.createdDate DESC")
+    List<News> findByCreatedDate(@Param("date") java.time.LocalDate date);
+
+    /**
+     * 특정 날짜 + 카테고리로 뉴스 조회 (MCP용)
+     */
+    @Query("SELECT n FROM News n WHERE CAST(n.createdDate AS date) = :date AND n.category = :category ORDER BY n.createdDate DESC")
+    List<News> findByCreatedDateAndCategory(@Param("date") java.time.LocalDate date, @Param("category") NewsCategory category);
+
+    /**
+     * ID 목록으로 뉴스 조회 (MCP용)
+     */
+    @Query("SELECT n FROM News n WHERE n.id IN :ids")
+    List<News> findByIdIn(@Param("ids") List<Long> ids);
+
 
 
 //    // 삭제된 것도 보려면 native query 사용
