@@ -1,14 +1,14 @@
 package com.bugmaker.apt.domain.news;
 
-import com.bugmaker.apt.enums.NewsCategory;
+import com.bugmaker.apt.domain.shared.CoreEntity;
+import com.bugmaker.apt.enums.news.NewsCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.Where;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import static io.jsonwebtoken.lang.Assert.state;
 
 /* crawler 작동 시, 중복 news를 가져오는 순간 실행 멈추도록 uk 추가함 */
 @Entity
@@ -16,17 +16,14 @@ import java.time.LocalDateTime;
     @UniqueConstraint(name = "uk_news_title", columnNames = "title"),
     @UniqueConstraint(name = "uk_news_reference", columnNames = "reference")
 })
+@Where(clause = "deleted = false")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Comment("뉴스 마스터 테이블")
-public class News {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Comment("뉴스 ID")
-    private Long id;
+@Comment("뉴스 테이블")
+public class News extends CoreEntity {
 
     @Column(nullable = false, length = 200)
     @Comment("제목")
@@ -60,7 +57,12 @@ public class News {
     @Column(nullable = false)
     @Comment("좋아요 누적수")
     @Builder.Default
-    private Long heartCount = 0L;
+    private Long likeCount = 0L;
+
+    @Column(nullable = false)
+    @Comment("즐겨찾기 누적수")
+    @Builder.Default
+    private Long favoriteCount = 0L;
 
     @Column(nullable = false)
     @Comment("공유 누적수")
@@ -72,15 +74,6 @@ public class News {
     @Builder.Default
     private Long reportCount = 0L;
 
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    @Comment("생성일")
-    private LocalDateTime createdDate;
-
-    @LastModifiedDate
-    @Comment("수정일")
-    private LocalDateTime lastModifiedDate;
-
     // 비즈니스 메서드
     // 뉴스 생성(본문에 이미지 없는 뉴스일때)
     public static News createNews(String title, String content, String reference, NewsCategory category) {
@@ -89,10 +82,6 @@ public class News {
                 .content(content)
                 .reference(reference)
                 .category(category != null ? category : NewsCategory.GENERAL)
-                .viewCount(0L)
-                .heartCount(0L)
-                .shareCount(0L)
-                .reportCount(0L)
                 .build();
     }
 
@@ -106,10 +95,6 @@ public class News {
                 .category(category != null ? category : NewsCategory.GENERAL)
                 .thumbnailUrl(thumbnailUrl)
                 .detailImageUrl(detailImageUrl)
-                .viewCount(0L)
-                .heartCount(0L)
-                .shareCount(0L)
-                .reportCount(0L)
                 .build();
     }
 
@@ -117,14 +102,21 @@ public class News {
         this.viewCount++;
     }
 
-    public void increaseHeartCount() {
-        this.heartCount++;
+    public void increaseLikeCount() {
+        this.likeCount++;
     }
 
-    public void decreaseHeartCount() {
-        if (this.heartCount > 0) {
-            this.heartCount--;
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
         }
+    }
+
+    public void increaseFavoriteCount() { this.favoriteCount++; }
+
+    public void decreaseFavoriteCount() {
+        state(this.favoriteCount > 0, "즐겨찾기는 음수가 될 수 없습니다.");
+        this.favoriteCount--;
     }
 
     public void increaseShareCount() { this.shareCount++; }

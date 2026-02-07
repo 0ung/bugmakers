@@ -1,6 +1,6 @@
 package com.bugmaker.apt.domain.news;
 
-import com.bugmaker.apt.enums.NewsCategory;
+import com.bugmaker.apt.enums.news.NewsCategory;
 
 import java.time.LocalDateTime;
 
@@ -17,7 +17,7 @@ public record NewsResponse(
         String displayName,     // 화면 표시명 (한글): 부동산, 시장, 정책...
         String thumbnailUrl,
         Long viewCount,
-        Long heartCount,
+        Long likeCount,
         Long shareCount,
         LocalDateTime createdDate
 ) {
@@ -35,7 +35,7 @@ public record NewsResponse(
                 newsCategory.getDisplayName(), // 부동산
                 news.getThumbnailUrl(),
                 news.getViewCount(),
-                news.getHeartCount(),
+                news.getLikeCount(),
                 news.getShareCount(),
                 news.getCreatedDate()
         );

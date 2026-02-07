@@ -2,6 +2,7 @@ package com.bugmaker.apt.domain.shared;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -21,9 +22,11 @@ public abstract class BaseEntity {
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
+    @Comment("생성일")
     private LocalDateTime createdDate;
 
     @LastModifiedDate
+    @Comment("수정일")
     private LocalDateTime lastModifiedDate;
 
     @Override

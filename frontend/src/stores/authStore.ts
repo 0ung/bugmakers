@@ -1,38 +1,39 @@
 // src/stores/authStore.ts
 import { create } from "zustand";
 import { api } from "../utils/axios";
+import type { Member } from "../types/member";
 
-interface User {
-  id: number;
-  createdDate: string;
-  lastModifiedDate: string;
-
-  email?: {
-    address: string;
-  };
-
-  nickname: string;
-  memberRole: "USER" | "ADMIN";
-  status: "ACTIVE" | "INACTIVE";
-
-  provider: "kakao" | "google" | "local";
-  providerId: string;
-
-  active: boolean;
-  enabled: boolean;
-  username: string;
-
-  authorities: {
-    authority: string;
-  }[];
-
-  profileImageUrl?: string;
-  // 필요한 필드 추가
-}
+// interface User {
+//   id: number;
+//   createdDate: string;
+//   lastModifiedDate: string;
+//
+//   email?: {
+//     address: string;
+//   };
+//
+//   nickname: string;
+//   memberRole: "USER" | "ADMIN";
+//   status: "ACTIVE" | "INACTIVE";
+//
+//   provider: "kakao" | "google" | "local";
+//   providerId: string;
+//
+//   active: boolean;
+//   enabled: boolean;
+//   username: string;
+//
+//   authorities: {
+//     authority: string;
+//   }[];
+//
+//   profileImageUrl?: string;
+//   // 필요한 필드 추가
+// }
 
 interface AuthState {
   isLoggedIn: boolean;
-  user: User | null;
+  user: Member | null;
   isLoading: boolean; // /auth/me 호출 중인지
   isInitialized: boolean; // 앱이 처음 유저 정보 로딩 완료했는지
 
@@ -50,7 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   loadUser: async () => {
     set({ isLoading: true });
     try {
-      const res = await api.get<User>("/member/about/me");
+      const res = await api.get<Member>("/member/about/me");
       set({
         isLoggedIn: true,
         user: res.data,

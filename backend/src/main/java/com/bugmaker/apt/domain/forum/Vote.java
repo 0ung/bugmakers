@@ -1,5 +1,6 @@
 package com.bugmaker.apt.domain.forum;
 
+import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,4 +33,16 @@ public class Vote {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "forum_id", nullable = false)
     private Forum forum;
+
+    public static Vote create(String name) {
+        Vote vote = new Vote();
+
+        vote.name = name;
+
+        return vote;
+    }
+
+    public void setForum(Forum forum) {
+        this.forum = forum;
+    }
 }

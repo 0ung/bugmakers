@@ -32,7 +32,7 @@ class ForumTest {
         assertThat(forum.getMember().getNickname()).isEqualTo(member.getNickname());
 
         assertThat(forum.getViewCount()).isEqualTo(0L);
-        assertThat(forum.getHeartCount()).isEqualTo(0L);
+        assertThat(forum.getLikeCount()).isEqualTo(0L);
         assertThat(forum.getReportCount()).isEqualTo(0L);
     }
     
@@ -55,7 +55,7 @@ class ForumTest {
         List<ForumTagRelation> forumTagRelationList = forum.getForumTagRelationList();
 
         System.out.println("포럼 제목 : " + forum.getTitle());
-        System.out.println("포럼 작성자 메일 : " + forum.getMember().getEmail().address());
+        System.out.println("포럼 작성자 메일 : " + forum.getMember().getEmail().getAddress());
         System.out.println("포럼 작성자 닉네임 : " + forum.getMember().getNickname());
 
         for (ForumTagRelation forumTagRelation : forumTagRelationList) {
@@ -100,19 +100,19 @@ class ForumTest {
     }
 
     @Test
-    void decreaseHeartCountSuccessAndFail() {
-        assertThat(forum.getHeartCount()).isEqualTo(0L);
+    void decreaseLikeCountSuccessAndFail() {
+        assertThat(forum.getLikeCount()).isEqualTo(0L);
 
-        forum.increaseHeartCount();
-        forum.increaseHeartCount();
-        assertThat(forum.getHeartCount()).isEqualTo(2L);
+        forum.increaseLikeCount();
+        forum.increaseLikeCount();
+        assertThat(forum.getLikeCount()).isEqualTo(2L);
 
-        forum.decreaseHeartCount();
-        assertThat(forum.getHeartCount()).isEqualTo(1L);
+        forum.decreaseLikeCount();
+        assertThat(forum.getLikeCount()).isEqualTo(1L);
 
-        forum.decreaseHeartCount();
+        forum.decreaseLikeCount();
 
-        assertThatThrownBy(() -> forum.decreaseHeartCount())
+        assertThatThrownBy(() -> forum.decreaseLikeCount())
         .isInstanceOf(IllegalStateException.class);
     }
 

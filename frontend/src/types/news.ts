@@ -13,7 +13,7 @@ export interface NewsItem {
     reference: string;
     thumbnailUrl?: string;
     viewCount: number;
-    heartCount: number;
+    likeCount: number;
     shareCount: number;
     createdDate: string;
 }

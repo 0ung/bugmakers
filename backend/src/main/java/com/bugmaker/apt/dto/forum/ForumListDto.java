@@ -8,7 +8,7 @@ public record ForumListDto(
         String content,
         String authorNickname,
         Long viewCount,
-        Long heartCount,
+        Long likeCount,
         Long reportCount,
         LocalDateTime createdDate,
         LocalDateTime lastModifiedDate

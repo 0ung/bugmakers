@@ -22,7 +22,7 @@ message NewsResponse {
   string reference = 3;
   string category = 4;
   int64 view_count = 5;
-  int64 heart_count = 6;
+  int64 like_count = 6;
   int64 share_count = 7;
   int64 report_count = 8;
   string created_date = 9;

@@ -1,5 +1,6 @@
 package com.bugmaker.apt.domain.common;
 
+import com.bugmaker.apt.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -10,12 +11,8 @@ import org.hibernate.annotations.Comment;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Comment("파일 마스터 테이블")
-public class File {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Comment("파일 ID")
-    private Long id;
+@Comment("파일 테이블")
+public class File extends BaseEntity {
 
     @Column(nullable = false, length = 255)
     @Comment("파일명")
