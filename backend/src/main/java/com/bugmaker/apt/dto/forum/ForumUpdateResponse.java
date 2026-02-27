@@ -1,4 +1,4 @@
-package com.bugmaker.apt.contoller.forum;
+package com.bugmaker.apt.dto.forum;
 
 import com.bugmaker.apt.domain.forum.Forum;
 
