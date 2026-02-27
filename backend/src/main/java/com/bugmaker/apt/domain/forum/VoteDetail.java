@@ -27,5 +27,10 @@ public class VoteDetail extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-
+    public static VoteDetail create(Vote vote, Member member) {
+        VoteDetail voteDetail = new VoteDetail();
+        voteDetail.vote = vote;
+        voteDetail.member = member;
+        return voteDetail;
+    }
 }

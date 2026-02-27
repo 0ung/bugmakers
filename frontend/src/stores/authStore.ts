@@ -51,15 +51,32 @@ export const useAuthStore = create<AuthState>((set) => ({
   loadUser: async () => {
     set({ isLoading: true });
     try {
-      const res = await api.get<Member>("/member/about/me");
-      set({
-        isLoggedIn: true,
-        user: res.data,
-        isLoading: false,
-        isInitialized: true,
-      });
+      // _skipAuthRetry: 비로그인 시 refresh/redirect 없이 조용히 실패하도록 설정
+      const res = await api.get<Member>("/member/about/me", {
+        _skipAuthRetry: true,
+      } as any);
+
+      const userData = res.data;
+
+      // 응답 데이터 검증: 유효한 사용자 정보가 있는지 확인
+      if (userData && userData.id && userData.nickname) {
+        set({
+          isLoggedIn: true,
+          user: userData,
+          isLoading: false,
+          isInitialized: true,
+        });
+      } else {
+        // 200 응답이지만 유효하지 않은 사용자 데이터 → 비로그인 처리
+        set({
+          isLoggedIn: false,
+          user: null,
+          isLoading: false,
+          isInitialized: true,
+        });
+      }
     } catch (e) {
-      // 401 등 → 비로그인 상태
+      // 401/403 등 → 비로그인 상태
       set({
         isLoggedIn: false,
         user: null,

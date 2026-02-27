@@ -5,6 +5,23 @@ import { api } from "../utils/axios";
 
 // ... (인터페이스 정의 DebateVotes, forumstats, Debate, SliceResponse 그대로 유지) ...
 
+function formatRelativeTime(dateStr: string): string {
+  const created = new Date(dateStr);
+  const diffMs = Date.now() - created.getTime();
+  const diffMin = Math.floor(diffMs / 1000 / 60);
+  const diffHour = Math.floor(diffMin / 60);
+
+  if (diffMin < 1) return "방금 전";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  if (diffHour < 24) return `${diffHour}시간 전`;
+
+  return created.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).replace(/\. /g, "-").replace(".", "");
+}
+
 export default function CommunityPage() {
   const navigate = useNavigate();
 
@@ -55,8 +72,8 @@ export default function CommunityPage() {
           },
         });
 
-        const newForums = response.data.content;
-        const isLastPage = response.data.last;
+        const newForums = response.data.data.content;
+        const isLastPage = response.data.data.last;
 
         setForums((prevForums) => {
           // ⭐️ 중요한 수정: 이전에 불러온 데이터가 이미 있는 경우 중복 추가 방지 (초기 로딩 시 특히 중요)
@@ -195,23 +212,42 @@ export default function CommunityPage() {
 
           {forums.map((forum) => (
             <article
-              key={forum.id}
-              onClick={() => navigate(`/community/${forum.id}`)}
+              key={forum.forumId}
+              onClick={() => navigate(`/community/${forum.forumId}`)}
               className="cursor-pointer bg-white p-6 rounded-xl shadow hover:shadow-md transition border-l-4 border-transparent hover:border-blue-600 flex gap-6"
             >
-              {/* 투표 썸네일 */}
-              <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-red-200">
-                <div className="text-[10px] text-gray-600 mb-1">
-                  {forum.status}
-                </div>
-                <div className="flex items-center gap-1 font-bold">
-                  {/* <span className="text-blue-600">{forum.votes.a}%</span> */}
-                  <span className="text-xs text-gray-400 font-normal">vs</span>
-                  {/* <span className="text-red-600">{forum.votes.b}%</span> */}
-                </div>
-                <div className="text-[10px] text-gray-500 mt-1">
-                  {/* {forum.votes.total}명 */}
-                </div>
+              {/* 투표 현황 */}
+              <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-blue-50 to-red-50 rounded-xl p-3 flex flex-col items-center justify-center border-2 border-gray-200 gap-0.5">
+                {forum.topVotes?.length >= 2 ? (
+                  <>
+                    <span
+                      className={`w-full text-center font-bold text-blue-700 leading-tight line-clamp-1 ${
+                        forum.topVotes[0].count >= forum.topVotes[1].count ? "text-sm" : "text-xs"
+                      }`}
+                      title={forum.topVotes[0].name}
+                    >
+                      {forum.topVotes[0].name}
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-semibold my-1">vs</span>
+                    <span
+                      className={`w-full text-center font-bold text-red-600 leading-tight line-clamp-1 ${
+                        forum.topVotes[1].count > forum.topVotes[0].count ? "text-sm" : "text-xs"
+                      }`}
+                      title={forum.topVotes[1].name}
+                    >
+                      {forum.topVotes[1].name}
+                    </span>
+                  </>
+                ) : forum.topVotes?.length === 1 ? (
+                  <span
+                    className="w-full text-center text-sm font-bold text-blue-700 leading-tight line-clamp-2"
+                    title={forum.topVotes[0].name}
+                  >
+                    {forum.topVotes[0].name}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-gray-400 text-center">아직 투표가 없습니다</span>
+                )}
               </div>
 
               {/* 내용 섹션 */}
@@ -232,15 +268,10 @@ export default function CommunityPage() {
                   {/* <span>⏰ {forum.stats.time}</span> */}
                   {/* <span>👁️ {forum.stats.views}</span> */}
                 </div>
-                <div className="flex gap-2">
-                  {/* {forum.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full"
-                    >
-                      #{t}
-                    </span>
-                  ))} */}
+                <div className="flex justify-end">
+                  <span className="text-xs text-gray-400">
+                    {formatRelativeTime(forum.createdDate)}
+                  </span>
                 </div>
               </div>
             </article>
