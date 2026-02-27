@@ -53,6 +53,13 @@ public class Forum extends BaseEntity {
 
     private LocalDateTime deletedDate;
 
+    private LocalDateTime voteDeadline;
+
+    public boolean isVoteOpen() {
+        if (voteDeadline == null) return true;
+        return LocalDateTime.now().isBefore(voteDeadline);
+    }
+
     public static Forum postUp(ForumCreateRequest createRequest, Member member) {
         Forum forum = new Forum();
 
@@ -60,6 +67,7 @@ public class Forum extends BaseEntity {
         forum.content = createRequest.content();
         forum.status = Status.ACTIVE;
         forum.member = member;
+        forum.voteDeadline = createRequest.voteDeadline();
 
         forum.viewCount = 0L;
         forum.likeCount = 0L;

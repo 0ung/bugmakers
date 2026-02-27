@@ -2,7 +2,7 @@ import logo from "../assets/images/myHome.png";
 
 export default function LoginPage() {
   const handleOAuth = (provider: string) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
     window.location.href = `${baseUrl}/oauth2/authorization/${provider}`;
   };
 
