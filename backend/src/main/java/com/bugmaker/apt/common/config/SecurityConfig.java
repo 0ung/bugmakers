@@ -49,13 +49,12 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 // 요청 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/oauth2/**", "/error", "/*.html", "/*.css", "/*.js"
-                                , "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/mcp/digest/**").permitAll()
-                        .requestMatchers("/api/news/**").permitAll()
-                        .requestMatchers("/auth/logout").permitAll()
-                        .requestMatchers("/api/forums", "/api/forum/*", "/api/forum/*/comments").permitAll()
-//                        .anyRequest().permitAll())  // 임시로 모두 허용 (개발단계)
-                        .anyRequest().authenticated())  // 나머지는 인증 필요
+//                        .requestMatchers("/", "/oauth2/**", "/error", "/*.html", "/*.css", "/*.js"
+//                                , "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/mcp/digest/**").permitAll()
+//                        .requestMatchers("/api/news/**").permitAll()
+                        .anyRequest().permitAll())  // 임시로 모두 허용 (개발단계)
+//                        .anyRequest().authenticated())  // 나머지는 인증 필요
+
 
                 // 폼 로그인 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -74,7 +73,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource configurationSource(){
+    public CorsConfigurationSource configurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 Origin (프론트엔드 주소)
