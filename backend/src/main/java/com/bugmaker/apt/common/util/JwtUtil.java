@@ -68,7 +68,7 @@ public class JwtUtil {
 
     public Authentication getAuthentication(String token) {
         UserDetails userDetails = memberService.loadUserByUsername(getMemberIdFromToken(token));
-        log.debug("user deploy {}", userDetails);
+        log.info("Authentication {}", userDetails);
         return new UsernamePasswordAuthenticationToken
                 (userDetails, null, userDetails.getAuthorities());
     }
@@ -82,6 +82,8 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+
+        log.info("맴버 ID : {}", claims.getSubject());
 
         return claims.getSubject();
     }
