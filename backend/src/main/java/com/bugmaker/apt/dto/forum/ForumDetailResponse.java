@@ -1,16 +1,21 @@
 package com.bugmaker.apt.dto.forum;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-public record ForumListDto(
+public record ForumDetailResponse(
         Long forumId,
         String title,
         String content,
         String authorNickname,
         Long viewCount,
         Long likeCount,
-        Long reportCount,
         LocalDateTime createdDate,
-        LocalDateTime lastModifiedDate
+        LocalDateTime lastModifiedDate,
+        List<VoteResponse> voteList,
+        Long myVoteId,
+        long totalVoteCount,
+        LocalDateTime voteDeadline,
+        boolean voteOpen
 ) {
 }

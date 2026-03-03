@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -15,6 +16,9 @@ public interface ForumRepository extends Repository<Forum, Long> {
     Forum save(Forum forum);
 
     Optional<Forum> findById(Long id);
+
+    @Query("SELECT f FROM Forum f JOIN FETCH f.member LEFT JOIN FETCH f.voteList WHERE f.id = :id")
+    Optional<Forum> findDetailById(@Param("id") Long id);
 
     @Query("SELECT f FROM Forum f join fetch f.member m")
     Slice<Forum> findForumAll(Pageable pageable);

@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll())  // 임시로 모두 허용 (개발단계)
 //                        .anyRequest().authenticated())  // 나머지는 인증 필요
 
+
                 // 폼 로그인 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
 

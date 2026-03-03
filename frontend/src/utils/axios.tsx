@@ -1,9 +1,10 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { ApiError } from "../types/error";
 
-// 1. 커스텀 설정 타입 정의 (_retry 속성 포함)
+// 1. 커스텀 설정 타입 정의 (_retry, _skipAuthRetry 속성 포함)
 interface CustomRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
+  _skipAuthRetry?: boolean; // loadUser 등 인증 체크용 요청에서 refresh/redirect 건너뛰기
 }
 
 export const api = axios.create({
@@ -29,8 +30,19 @@ api.interceptors.response.use(
 
     if (!originalRequest) return Promise.reject(ApiError.from(error));
 
+    // _skipAuthRetry 플래그가 있으면 인터셉터의 refresh/redirect 로직을 건너뜀
+    // (loadUser 등 초기 인증 체크용 요청에 사용)
+    if (originalRequest._skipAuthRetry) {
+      return Promise.reject(ApiError.from(error));
+    }
+
     // 401 Unauthorized: Access Token 만료 상황
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // refresh 엔드포인트 자체의 401은 다시 refresh 시도하지 않음 (deadlock 방지)
+      if (originalRequest.url?.includes("/auth/refresh")) {
+        return Promise.reject(ApiError.from(error));
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

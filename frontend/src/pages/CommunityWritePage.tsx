@@ -1,4 +1,5 @@
 import { useState} from "react";
+import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/layouts/MainLayout";
 import { api } from "../utils/axios";
 
@@ -27,6 +28,7 @@ interface FormData {
 let nextVoteOptionId = 0;
 
 export default function CommunityWritePage() {
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -38,6 +40,8 @@ export default function CommunityWritePage() {
     { id: nextVoteOptionId++, value: "" }, // 초기 2개 항목
     { id: nextVoteOptionId++, value: "" },
   ]);
+
+  const [voteDeadline, setVoteDeadline] = useState<string>("");
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,23 +126,19 @@ export default function CommunityWritePage() {
         // 백엔드에 보낼 때는 항목의 value만 배열로 추출 (원하는 형식에 따라 변경)
         voteList: voteList.map(option => {
           return { name : option.value};
-        }), 
+        }),
+        voteDeadline: voteDeadline || null,
       };
 
       console.log("전송될 데이터:", payload);
 
       // axios 요청 (API 엔드포인트 수정 필요)
-      const response = await api.post<any>('/api/forum', payload); 
-      console.log('게시글 등록 성공:', response.data);
+      const response = await api.post<any>('/api/forum', payload);
+      console.log('게시글 등록 성공:', response.data.data);
       setSuccess(true);
-      
-      // 성공 후 폼 초기화 로직
-      setFormData({ title: '', content: '' });
-      nextVoteOptionId = 0; // ID 초기화
-      setVoteList([
-        { id: nextVoteOptionId++, value: "" },
-        { id: nextVoteOptionId++, value: "" },
-      ]);
+
+      // 성공 후 커뮤니티 목록 페이지로 이동
+      navigate('/community');
 
     } catch (err: any) {
       console.error('게시글 등록 실패:', err);
@@ -221,6 +221,22 @@ export default function CommunityWritePage() {
               + 항목 추가
             </button>
           )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            투표 마감일 (선택사항)
+          </label>
+          <input
+            type="datetime-local"
+            value={voteDeadline}
+            onChange={e => setVoteDeadline(e.target.value)}
+            className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+            disabled={loading}
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            설정하지 않으면 마감 없이 계속 투표할 수 있습니다.
+          </p>
         </div>
 
         <button

@@ -73,8 +73,15 @@ export default function Header() {
               </button>
               <button
                 onClick={async () => {
+                  // 인증 필요 페이지에서 로그아웃하면 메인으로, 아니면 현재 페이지 유지
+                  const authRequiredPaths = ["/mypage", "/community/write"];
+                  const needsAuth = authRequiredPaths.some(
+                    (path) => location.pathname.startsWith(path)
+                  );
                   await logout();
-                  navigate("/login");
+                  if (needsAuth) {
+                    navigate("/");
+                  }
                 }}
                 className="text-gray-600 border px-3 py-1.5 rounded-md hover:bg-gray-100 transition"
               >
