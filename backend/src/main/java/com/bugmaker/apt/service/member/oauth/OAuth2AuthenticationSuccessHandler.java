@@ -47,8 +47,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         log.info("OAuth2 조회 성공 - MemberId: {}", memberId);
 
-        String accessToken = jwtUtil.generateAccessToken(memberId, member.getEmail().toString());
-        String refreshToken = jwtUtil.generateRefreshToken(memberId, member.getEmail().toString());
+        String accessToken = jwtUtil.generateAccessToken(memberId, member.getEmail().getAddress());
+        String refreshToken = jwtUtil.generateRefreshToken(memberId, member.getEmail().getAddress());
         member.updateRefreshToken(refreshToken);
 
         // 3. 쿠키 생성 및 추가 (URL 파라미터 X)
