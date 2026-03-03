@@ -68,9 +68,9 @@ public class JwtUtil {
 
     public Authentication getAuthentication(String token) {
         UserDetails userDetails = memberService.loadUserByUsername(getMemberIdFromToken(token));
-        log.debug("user deploy {}",userDetails);
+        log.debug("user deploy {}", userDetails);
         return new UsernamePasswordAuthenticationToken
-                (userDetails,null,userDetails.getAuthorities());
+                (userDetails, null, userDetails.getAuthorities());
     }
 
     /**
@@ -91,6 +91,7 @@ public class JwtUtil {
      * JWT 토큰 유효성 검증
      */
     public boolean validateToken(String token) {
+        log.info("테스트 토큰 : {}", token);
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
@@ -98,6 +99,7 @@ public class JwtUtil {
                     .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
+            log.error("유효성 검사 실패 {}", e.getMessage());
             return false;
         }
     }
