@@ -63,7 +63,31 @@ backend/.sts4-cache
 logs/
 *.log
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Proto 자동 생성 파일 (전부 제외)
+protos/
+
+# 로그
+crawler.log
+
 # =========================
 # ROOT NODE MODULES (if ever created)
 # =========================
 /node_modules
+
+# =========================
+# ENVIRONMENT VARIABLES (NEVER COMMIT!)
+# =========================
+# .env
+.env.local
+.env.dev
+.env.*.local
+backend/.env
+backend/.env.local
+backend/.env.dev

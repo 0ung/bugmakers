@@ -1,0 +1,149 @@
+name: Frontend Deploy
+
+on:
+  pull_request:
+    types: [closed]
+    branches: ["dev", "main"]
+    paths:
+      - "frontend/**"
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set environment by branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH="${{ github.base_ref }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
+
+          if [ "$BRANCH" = "dev" ]; then
+            echo "APP_PROFILE=dev" >> $GITHUB_ENV
+            echo "APP_PORT=100" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=frontend-dev" >> $GITHUB_ENV
+            echo "NGINX_CONF=/home/ubuntu/nginx/dev/nginx.conf" >> $GITHUB_ENV
+            echo "LOG_DIR=/home/ubuntu/app/frontend/dev/logs" >> $GITHUB_ENV
+            echo "VITE_API_URL=${{ secrets.VITE_API_BASE_URL_DEV }}" >> $GITHUB_ENV
+          elif [ "$BRANCH" = "main" ]; then
+            echo "APP_PROFILE=prod" >> $GITHUB_ENV
+            echo "APP_PORT=101" >> $GITHUB_ENV
+            echo "CONTAINER_NAME=frontend-prod" >> $GITHUB_ENV
+            echo "NGINX_CONF=/home/ubuntu/nginx/prod/nginx.conf" >> $GITHUB_ENV
+            echo "LOG_DIR=/home/ubuntu/app/frontend/prod/logs" >> $GITHUB_ENV
+            echo "VITE_API_URL=${{ secrets.VITE_API_BASE_URL_PROD }}" >> $GITHUB_ENV
+          else
+            echo "Unknown branch: $BRANCH"
+            exit 1
+          fi
+
+          echo "===== BRANCH CONFIG ====="
+          echo "BRANCH     = $BRANCH"
+          echo "PROFILE    = $APP_PROFILE"
+          echo "PORT       = $APP_PORT"
+          echo "CONTAINER  = $CONTAINER_NAME"
+          echo "NGINX_CONF = $NGINX_CONF"
+          echo "LOG_DIR    = $LOG_DIR"
+          echo "VITE_API_URL set (masked in logs)"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Image
+        run: |
+          IMAGE_REPO="ungyoung/frontend"
+          IMAGE_TAG="$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+          IMAGE_FULL="${IMAGE_REPO}:${IMAGE_TAG}"
+
+          echo "IMAGE_FULL=${IMAGE_FULL}" >> $GITHUB_ENV
+
+          docker build \
+            --build-arg VITE_API_BASE_URL="${VITE_API_URL}" \
+            -t "${IMAGE_FULL}" ./frontend
+
+          docker push "${IMAGE_FULL}"
+
+          docker tag "${IMAGE_FULL}" "${IMAGE_REPO}:latest"
+          docker push "${IMAGE_REPO}:latest"
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE_FULL: ${{ env.IMAGE_FULL }}
+          APP_PROFILE: ${{ env.APP_PROFILE }}
+          APP_PORT: ${{ env.APP_PORT }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          NGINX_CONF: ${{ env.NGINX_CONF }}
+          LOG_DIR: ${{ env.LOG_DIR }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: IMAGE_FULL,APP_PROFILE,APP_PORT,CONTAINER_NAME,NGINX_CONF,LOG_DIR
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
+
+            echo "Deploying image: $IMAGE_FULL"
+            echo "Container: $CONTAINER_NAME"
+            echo "Port: $APP_PORT"
+            echo "Nginx conf: $NGINX_CONF"
+            echo "Logs dir: $LOG_DIR"
+
+            # sanity checks on server
+            if [ ! -f "$NGINX_CONF" ]; then
+              echo "❌ NGINX_CONF not found: $NGINX_CONF"
+              ls -al "$(dirname "$NGINX_CONF")" || true
+              exit 1
+            fi
+
+            mkdir -p "$LOG_DIR"
+
+            docker pull "$IMAGE_FULL"
+
+            docker stop "$CONTAINER_NAME" || true
+            docker rm "$CONTAINER_NAME" || true
+
+            docker network create dev-net >/dev/null 2>&1 || true
+
+            docker run -d \
+              --name "$CONTAINER_NAME" \
+              --network dev-net \
+              --restart always \
+              -p "${APP_PORT}:80" \
+              -v "${NGINX_CONF}:/etc/nginx/nginx.conf:ro" \
+              -v "$LOG_DIR:/var/log/nginx" \
+              "$IMAGE_FULL"
+
+            echo "Waiting for container to stabilize..."
+            sleep 2
+
+            if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+              echo "❌ Container is not running. Showing last logs:"
+              docker logs --tail 200 "$CONTAINER_NAME" || true
+              echo "Inspect:"
+              docker inspect "$CONTAINER_NAME" || true
+              exit 1
+            fi
+
+            echo "✅ Container is running. Recent logs:"
+            docker logs --tail 80 "$CONTAINER_NAME" || true
+
+            docker image prune -f

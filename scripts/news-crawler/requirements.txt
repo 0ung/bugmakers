@@ -1,0 +1,18 @@
+# RSS 파싱
+feedparser==6.0.10
+
+# HTTP 요청
+requests==2.31.0
+
+# YAML 설정 파일
+PyYAML==6.0.1
+
+# 환경 변수
+python-dotenv==1.0.0
+
+# 로깅
+colorlog==6.8.0
+
+# gRPC 의존성
+grpcio>=1.68.0
+grpcio-tools>=1.68.0

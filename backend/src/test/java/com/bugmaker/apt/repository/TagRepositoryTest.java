@@ -1,0 +1,35 @@
+package com.bugmaker.apt.repository;
+
+import com.bugmaker.apt.domain.tag.Tag;
+import com.bugmaker.apt.repository.forum.TagRepository;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+
+@DataJpaTest
+class TagRepositoryTest {
+    @Autowired
+    TagRepository tagRepository;
+
+    @Autowired
+    EntityManager entityManager;
+
+    @Test
+    void createTag() {
+        Tag tag1 = Tag.createTag("경기");
+        assertThat(tag1.getId()).isNull();
+
+        tagRepository.save(tag1);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Tag foundTag1 = tagRepository.findById(tag1.getId()).orElseThrow();
+
+        assertThat(foundTag1.getName()).isEqualTo(tag1.getName());
+    }
+}

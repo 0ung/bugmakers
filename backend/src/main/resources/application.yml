@@ -1,0 +1,21 @@
+spring:
+  profiles:
+    active: local
+  jpa:
+    open-in-view: false
+
+# gRPC 서버 설정
+grpc:
+  server:
+    port: 9090  # gRPC 포트 (REST는 8080, gRPC는 9090)
+
+
+
+    # local
+    #./gradlew bootRun
+
+    # dev
+    #./gradlew bootRun --args='--spring.profiles.active=dev'
+
+    # prod
+    #./gradlew bootRun --args='--spring.profiles.active=prod'

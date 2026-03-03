@@ -1,0 +1,41 @@
+# RSS 뉴스 출처 설정
+# 본문 제공이 확인된 RSS만 사용
+
+rss_sources:
+  # 본문 제공 확인된 RSS 
+  - name: "JTBC 경제"
+    url: "https://fs.jtbc.co.kr/RSS/economy.xml"
+    category: "경제"
+    enabled: true
+  
+  - name: "SBS 경제"
+    url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=02"
+    category: "경제"
+    enabled: true
+  
+  - name: "SBS 사회"
+    url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=07"
+    category: "사회"
+    enabled: true
+  
+  # 본문 제공 여부 미확인
+  - name: "YTN 경제"
+    url: "https://www.ytn.co.kr/_rss/economy.xml"
+    category: "경제"
+    enabled: true
+  
+  - name: "연합뉴스TV 경제"
+    url: "https://www.yonhapnewstv.co.kr/browse/feed/"
+    category: "경제"
+    enabled: true
+  
+  - name: "채널A 경제"
+    url: "https://www.ichannela.com/RSS/economy.xml"
+    category: "경제"
+    enabled: true
+
+# 크롤링 설정
+crawler:
+  duplicate_check_days: 7
+  request_delay: 0
+  max_news_per_run: 100

@@ -1,0 +1,134 @@
+package com.bugmaker.apt.domain.forum;
+
+import com.bugmaker.apt.enums.member.Status;
+import com.bugmaker.apt.domain.member.Member;
+import com.bugmaker.apt.domain.shared.BaseEntity;
+import io.jsonwebtoken.lang.Assert;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import static jakarta.persistence.EnumType.STRING;
+import static lombok.AccessLevel.PROTECTED;
+import static org.springframework.util.Assert.state;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = PROTECTED)
+@ToString
+public class Forum extends BaseEntity {
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+
+    @OneToMany(mappedBy = "forum", cascade = CascadeType.ALL)
+    private List<Vote> voteList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "forum")
+    private List<ForumTagRelation> forumTagRelationList = new ArrayList<>();
+
+    private Long viewCount;
+
+    private Long likeCount;
+
+    private Long favoriteCount;
+
+    private Long shareCount;
+
+    private Long reportCount;
+
+    @Enumerated(value = STRING)
+    private Status status;
+
+    private LocalDateTime deletedDate;
+
+    private LocalDateTime voteDeadline;
+
+    public boolean isVoteOpen() {
+        if (voteDeadline == null) return true;
+        return LocalDateTime.now().isBefore(voteDeadline);
+    }
+
+    public static Forum postUp(ForumCreateRequest createRequest, Member member) {
+        Forum forum = new Forum();
+
+        forum.title = createRequest.title();
+        forum.content = createRequest.content();
+        forum.status = Status.ACTIVE;
+        forum.member = member;
+        forum.voteDeadline = createRequest.voteDeadline();
+
+        forum.viewCount = 0L;
+        forum.likeCount = 0L;
+        forum.favoriteCount = 0L;
+        forum.shareCount = 0L;
+        forum.reportCount = 0L;
+
+        return forum;
+    }
+
+    public void update(ForumUpdateRequest updateRequest) {
+        this.title = updateRequest.title();
+        this.content = updateRequest.content();
+    }
+
+    public void delete() {
+        state(status == Status.ACTIVE, "이미 삭제된 게시글은 삭제할 수 없습니다.");
+
+        this.status = Status.DEACTIVE;
+        this.deletedDate = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return this.status == Status.ACTIVE;
+    }
+
+    public void addForumTagRelation(ForumTagRelation forumTagRelation) {
+        this.forumTagRelationList.add(forumTagRelation);
+    }
+
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
+
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        state(this.likeCount > 0 ,"좋아요 누적수는 마이너스가 될 수 없습니다.");
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
+
+    public void increaseFavoriteCount() { this.favoriteCount++; }
+
+    public void decreaseFavoriteCount() {
+        Assert.state(this.favoriteCount > 0, "즐겨찾기는 음수가 될 수 없습니다.");
+        this.favoriteCount--;
+    }
+
+    public void increaseShareCount() { this.shareCount++; }
+
+    public void increaseReportCount() {
+        this.reportCount++;
+    }
+
+    public void addVoteContent(Vote vote) {
+        this.voteList.add(vote);
+        vote.setForum(this);
+    }
+
+}

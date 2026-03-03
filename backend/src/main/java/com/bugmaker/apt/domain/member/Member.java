@@ -1,69 +1,116 @@
 package com.bugmaker.apt.domain.member;
 
-import com.bugmaker.apt.domain.AbstractEntity;
-import jakarta.persistence.*;
+import com.bugmaker.apt.enums.member.MemberRole;
+import com.bugmaker.apt.enums.member.Status;
+import com.bugmaker.apt.domain.shared.BaseEntity;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.hibernate.annotations.NaturalId;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+import static jakarta.persistence.EnumType.STRING;
 import static lombok.AccessLevel.PROTECTED;
 import static org.springframework.util.Assert.state;
 
-
 @Entity
 @Getter
-@ToString(callSuper = true)
 @NoArgsConstructor(access = PROTECTED)
-public class Member extends AbstractEntity {
-    @NaturalId
+public class Member extends BaseEntity implements UserDetails {
+    //    @Column(nullable = false, unique = true, length = 100)
     @Embedded
     private Email email;
 
-    private String passwordHash;
+    //    @Column(nullable = false, length = 50)
+    private String nickname;
 
-    private String name;
+    @Enumerated(STRING)
+    private MemberRole memberRole;
 
-    private String phone;
+    @Enumerated(STRING)
+    private Status status;
 
-    @OneToOne
-    private MemberDetail detail;
+    //리프레쉬 토큰
+    private String refreshToken;
 
-    @Enumerated(EnumType.STRING)
-    private MemberRole role;
+    private LocalDateTime deactivatedDate;
 
-    @Enumerated(EnumType.STRING)
-    private MemberStatus status;
+    // OAuth2 관련 필드
+    private String provider; // google, naver, kakao
+    private String providerId; // OAuth2 제공자의 고유 ID (카카오의 경우 id 필드)
 
-    public static Member register(MemberRegisterRequest registerRequest, PasswordEncoder passwordEncoder) {
+
+    public static Member register(MemberRegisterRequest registerRequest, NicknameCreator nicknameCreator) {
         Member member = new Member();
 
         member.email = new Email(registerRequest.email());
-        member.passwordHash = passwordEncoder.encode(registerRequest.password());
-        member.name = registerRequest.name();
-        member.phone = registerRequest.phone();
-
-        member.detail = MemberDetail.create();
-
-        member.role = MemberRole.USER;
-        member.status = MemberStatus.ACTIVE;
+        member.nickname = nicknameCreator.generate();
+        member.memberRole = MemberRole.USER;
+        member.status = Status.ACTIVE;
 
         return member;
     }
 
-    public void deactivate() {
-        state(status == MemberStatus.ACTIVE, "ACTIVE 상태에서만 탈퇴가 가능합니다.");
+    // OAuth2 회원가입용 팩토리 메서드
+    public static Member joinWithOAuth2(String email, String provider, String providerId, NicknameCreator nicknameCreator) {
+        Member member = new Member();
 
-        this.status = MemberStatus.DEACTIVATED;
+        member.email = new Email(email);
+        member.nickname = nicknameCreator.generate();
+        member.memberRole = MemberRole.USER;
+        member.status = Status.ACTIVE;
+        member.provider = provider;
+        member.providerId = providerId;
+
+        return member;
     }
 
-    public void updateInfo(MemberInfoUpdateRequest updateRequest) {
-        state(getStatus() == MemberStatus.ACTIVE, "ACTIVE상태가 아니면 정보수정이 불가능합니다");
+    // 비즈니스 메서드
+    public void activate() {
+        state(status == Status.DEACTIVE, "비활성화 상태의 계정만 활성화 시킬 수 있습니다.");
 
-        this.detail.updateInfo(updateRequest);
+        this.status = Status.ACTIVE;
+        this.deactivatedDate = null;
+    }
+
+    public void deactivate() {
+        state(status == Status.ACTIVE, "활성 상태의 계정만 비활성화 시킬 수 있습니다.");
+
+        this.status = Status.DEACTIVE;
+        this.deactivatedDate = LocalDateTime.now();
     }
 
     public boolean isActive() {
-        return this.status == MemberStatus.ACTIVE;
+        return this.status == Status.ACTIVE;
+    }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.memberRole.getName()));
+    }
+
+    @Override
+    public String getPassword() {
+        return "";
+    }
+
+    @Override
+    public String getUsername() {
+        return this.getId().toString();
     }
 }
